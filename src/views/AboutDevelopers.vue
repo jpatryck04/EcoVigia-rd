@@ -113,6 +113,7 @@ import patryckImg from '@/assets/team/patryck.png';
 import yordalisImg from '@/assets/team/yordalis.png';
 import enmanuelImg from '@/assets/team/enmanuel.jpg';
 import anthonyImg from '@/assets/team/anthony.jpg';
+import neftaliImg from '@/assets/team/neftali.jpg';
 
 
 
@@ -172,7 +173,7 @@ const developers = ref<Developer[]>([
     nombre: 'Edward Neftalí Liriano Gómez',
     rol: 'Desarrollador Full Stack',
     matricula: '2022-0437',
-    foto: '',
+    foto: neftaliImg,
     telefono: '(809) 777-0697',
     telegram: 'https://t.me/Neta26',
     email: 'enlg2603@gmail.com',
