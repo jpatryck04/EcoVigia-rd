@@ -1,24 +1,69 @@
-# eco-vigia-rd
+# 🌱 EcoVigía RD
 
-## Project setup
-```
+Aplicación móvil desarrollada para el Ministerio de Medio Ambiente y Recursos Naturales de la República Dominicana.
+
+## 📋 Descripción
+
+EcoVigía RD es una aplicación móvil diseñada para promover la conciencia ambiental, facilitar la participación ciudadana y proporcionar acceso a información relevante sobre el medio ambiente en República Dominicana.
+
+## 🚀 Características
+
+### Módulos Públicos
+- ✅ **Inicio** - Slider con imágenes y mensajes educativos
+- ✅ **Sobre Nosotros** - Historia, misión y visión del ministerio
+- ✅ **Servicios** - Listado de servicios ofrecidos
+- ✅ **Noticias Ambientales** - Noticias actualizadas via API
+- ✅ **Áreas Protegidas** - Catálogo de parques nacionales y reservas
+- ✅ **Mapa Interactivo** - Visualización de áreas protegidas
+- ✅ **Videos Educativos** - Contenido multimedia educativo
+- ✅ **Voluntariado** - Sistema de registro para voluntarios
+- ✅ **Acerca de** - Información del equipo de desarrollo
+
+### Módulos con Autenticación
+- 🔐 **Reportar Daños** - Sistema de reportes ambientales
+- 🔐 **Mis Reportes** - Historial y seguimiento
+- 🔐 **Normativas** - Leyes y regulaciones ambientales
+- 🔐 **Mapa de Reportes** - Visualización geográfica
+
+## 🛠️ Tecnologías
+
+- **Frontend:** Vue 3, TypeScript, Composition API
+- **Estado:** Pinia
+- **Ruteo:** Vue Router 4
+- **Mapas:** Leaflet, Vue-Leaflet
+- **UI/UX:** CSS3, Sass, Responsive Design
+- **Mobile:** Capacitor
+- **API:** Axios
+
+## 👥 Equipo de Desarrollo
+
+| Nombre | Rol | Matrícula |
+|--------|-----|-----------|
+| Patry | Líder del Proyecto & Full-Stack | 2022-9999 |
+| [Nombre 2] | Desarrollador Frontend | 2022-8888 |
+| [Nombre 3] | Desarrollador Backend | 2022-7777 |
+
+## 🏫 Institución
+
+**Instituto Tecnológico de Las Américas (ITLA)**  
+**Materia:** Introduccion al Desarrollo de Aplicaciones Móviles  
+**Período:** 3-2025
+
+## 📦 Instalación
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/jpatryck04/EcoVigia-rd.git
+
+# Instalar dependencias
 npm install
-```
 
-### Compiles and hot-reloads for development
-```
+# Ejecutar en desarrollo
 npm run serve
-```
 
-### Compiles and minifies for production
-```
+# Construir para producción
 npm run build
-```
 
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+# Compilar para Android
+npx cap add android
+npx cap run android

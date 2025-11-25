@@ -111,6 +111,9 @@
 import { ref } from 'vue';
 import patryckImg from '@/assets/team/patryck.png';
 import yordalisImg from '@/assets/team/yordalis.png';
+import enmanuelImg from '@/assets/team/enmanuel.jpg';
+import anthonyImg from '@/assets/team/anthony.jpg';
+
 
 
 interface Developer {
@@ -138,7 +141,7 @@ const developers = ref<Developer[]>([
     matricula: '2023-1953',
     foto: patryckImg,
     telefono: '(829) 429-1048',
-    telegram: '',
+    telegram: 'https://t.me/Patryckjimenez',
     email: 'patryckyandelljimenea@gmail.com',
     habilidades: ['Vue.js', 'TypeScript','Ionic', 'Node.js', 'React', 'Flutter', 'UI/UX Design','C#']
   },
@@ -158,9 +161,9 @@ const developers = ref<Developer[]>([
     nombre: 'Anthony Enmanuel Feliz De La Rosa',
     rol: 'Desarrollador Full Stack',
     matricula: '2021-0615',
-    foto: '',
+    foto: anthonyImg,
     telefono: '(809) 418-3162',
-    telegram: '',
+    telegram: 'https://t.me/Zeidant',
     email: 'anthonyemma55@gmail.com',
     habilidades: ['Vue.js', 'TypeScript','JavaScript', 'Python', 'SQL','mongoDB','C#']
   },
@@ -171,7 +174,7 @@ const developers = ref<Developer[]>([
     matricula: '2022-0437',
     foto: '',
     telefono: '(809) 777-0697',
-    telegram: '',
+    telegram: 'https://t.me/Neta26',
     email: 'enlg2603@gmail.com',
     habilidades: ['Vue.js','JavaScript', 'Laravel', 'Ionic','Docker','CI/CD','.NET']
   },
@@ -192,7 +195,7 @@ const developers = ref<Developer[]>([
     nombre: 'Enmanuel De Jesus Pichardo Salas',
     rol: '',
     matricula: '2022-1341',
-    foto: '',
+    foto: enmanuelImg,
     telefono: '(849) 343-0203',
     telegram: '',
     email: 'enmanueldjpichardos@gmail.com',
@@ -254,11 +257,17 @@ const technologies = ref<Technology[]>([
 .developer-photo {
   height: 250px;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
 
   img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
   }
 }
 
