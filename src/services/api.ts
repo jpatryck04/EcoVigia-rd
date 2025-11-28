@@ -7,11 +7,24 @@ export const api = axios.create({
   timeout: 10000,
 });
 
-// Interceptor para manejo de errores
+// Interceptor para requests
+api.interceptors.request.use(
+  (config) => {
+    console.log(`🔄 API Call: ${config.method?.toUpperCase()} ${config.url}`);
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor para responses
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`✅ API Success: ${response.status} ${response.config.url}`);
+    return response;
+  },
   (error) => {
-    console.error('API Error:', error);
+    console.error(`❌ API Error: ${error.response?.status} ${error.config?.url}`);
+    console.error('Error details:', error.response?.data);
     return Promise.reject(error);
   }
 );
@@ -19,30 +32,18 @@ api.interceptors.response.use(
 export const medioAmbienteAPI = {
   // Servicios públicos
   getServicios: () => api.get('/servicios'),
-  
-  // Noticias
   getNoticias: () => api.get('/noticias'),
   getNoticiaById: (id: number) => api.get(`/noticias/${id}`),
-
-  // Videos
   getVideos: () => api.get('/videos'),
-
-  // Áreas protegidas
   getAreasProtegidas: () => api.get('/areas_protegidas'),
-
-  // Medidas
   getMedidas: () => api.get('/medidas'),
-
-  // Equipo
   getEquipo: () => api.get('/equipo'),
 
-  
-  
-  // Voluntariado
+  // Voluntariado - ENDPOINT PRINCIPAL
   solicitarVoluntariado: (data: any) => api.post('/voluntariado', data),
   
   // Endpoints que requieren autenticación
-  getNormativas: (token: string) =>
+  getNormativas: (token: string) => 
     api.get('/normativas', {
       headers: { Authorization: `Bearer ${token}` },
     }),
@@ -56,6 +57,8 @@ export const medioAmbienteAPI = {
     api.get('/mis_reportes', {
       headers: { Authorization: `Bearer ${token}` },
     }),
+
+  // Login de voluntarios (si la API lo tiene)
+  loginVoluntario: (email: string, password: string) =>
+    api.post('/login', { email, password }),
 };
-
-

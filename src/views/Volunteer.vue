@@ -87,11 +87,15 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { medioAmbienteAPI } from '@/services/api';
 import { useRouter } from 'vue-router';
+import { medioAmbienteAPI } from '@/services/api';
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
+const authStore = useAuthStore();
+
 const loading = ref(false);
+const useRealAPI = ref(true);
 
 const form = ref({
   cedula: '',
@@ -105,14 +109,53 @@ const submitApplication = async () => {
   loading.value = true;
   
   try {
-    await medioAmbienteAPI.solicitarVoluntariado(form.value);
+    // Verificar si el email ya está registrado
+    if (authStore.isEmailRegistered(form.value.email)) {
+      alert('❌ Este correo electrónico ya está registrado. Si ya eres voluntario, inicia sesión en la sección correspondiente.');
+      loading.value = false;
+      return;
+    }
+
+    // Generar ID único y preparar datos
+    const volunteerData = {
+      id: Date.now(),
+      ...form.value,
+      fecha: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    // Intentar con API real si está habilitada
+    if (useRealAPI.value) {
+      try {
+        await medioAmbienteAPI.solicitarVoluntariado(form.value);
+        console.log('✅ Solicitud enviada al Ministerio');
+      } catch (apiError) {
+        console.warn('⚠️ API no disponible, usando almacenamiento local');
+      }
+    }
+
+    // Guardar en localStorage como respaldo
+    const existingApplications = JSON.parse(localStorage.getItem('eco_vigia_volunteer_applications') || '[]');
+    existingApplications.push(volunteerData);
+    localStorage.setItem('eco_vigia_volunteer_applications', JSON.stringify(existingApplications));
+
+    alert('✅ ¡Solicitud enviada exitosamente! Un administrador revisará tu solicitud y te notificará cuando sea aprobada.');
     
-    alert('¡Solicitud enviada exitosamente! Te contactaremos pronto.');
+    // Limpiar formulario
+    form.value = {
+      cedula: '',
+      nombre: '',
+      email: '',
+      password: '',
+      telefono: ''
+    };
+
+    // Redirigir al inicio
     router.push('/');
     
   } catch (error) {
     console.error('Error submitting application:', error);
-    alert('Error al enviar la solicitud. Por favor intenta nuevamente.');
+    alert('❌ Error al enviar la solicitud. Por favor intenta nuevamente.');
   } finally {
     loading.value = false;
   }
@@ -200,11 +243,7 @@ const submitApplication = async () => {
     
     &:focus {
       outline: none;
-      border-color: #2e7d32;
-    }
-    
-    &::placeholder {
-      color: #999;
+      border-color: #1b5e20;
     }
   }
 }

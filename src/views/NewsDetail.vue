@@ -23,7 +23,7 @@
 
         <div class="article-image">
           <img 
-            :src="newsItem.imagen || '/images/news-placeholder.jpg'" 
+            :src="newsItem.imagen || newsPlaceholder" 
             :alt="newsItem.titulo"
             @error="handleImageError"
           />
@@ -69,6 +69,8 @@ import { useRoute } from 'vue-router';
 import { medioAmbienteAPI } from '@/services/api';
 import { formatDate } from '@/utils';
 import type { News } from '@/types';
+import newsPlaceholder from '@/assets/images/news-placeholder.jpg';
+
 
 const route = useRoute();
 const newsItem = ref<News | null>(null);
@@ -143,7 +145,7 @@ const loadNewsDetail = async () => {
 
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement;
-  target.src = '/images/news-placeholder.jpg';
+  target.src = newsPlaceholder;
 };
 
 onMounted(() => {

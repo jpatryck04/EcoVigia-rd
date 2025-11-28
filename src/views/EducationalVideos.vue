@@ -59,12 +59,15 @@
           <div class="video-player">
             <h3>{{ selectedVideo.title }}</h3>
             <div class="video-wrapper">
-              <!-- En una app real, aquí iría el reproductor de video -->
-              <div class="video-placeholder">
-                <i class="fas fa-play-circle"></i>
-                <p>Reproductor de video</p>
-                <p>{{ selectedVideo.url }}</p>
-              </div>
+              <!-- Reproductor de YouTube real -->
+              <iframe 
+                width="100%" 
+                height="400" 
+                :src="`https://www.youtube.com/embed/${getYouTubeId(selectedVideo.url)}?autoplay=1`"
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+              </iframe>
             </div>
             <div class="video-description">
               <p>{{ selectedVideo.description }}</p>
@@ -78,7 +81,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { formatDate } from '@/utils';
 
 interface Video {
   id: number;
@@ -104,6 +106,23 @@ const activeCategory = ref('all');
 const videos = ref<Video[]>([]);
 const selectedVideo = ref<Video | null>(null);
 
+// Función para extraer el ID de YouTube de la URL
+const getYouTubeId = (url: string) => {
+  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+};
+
+// Función para formatear fecha
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
 const filteredVideos = computed(() => {
   if (activeCategory.value === 'all') return videos.value;
   return videos.value.filter(video => video.category === activeCategory.value);
@@ -124,32 +143,73 @@ const closeVideo = () => {
 onMounted(async () => {
   // Simular carga de videos desde API
   try {
-    // const response = await medioAmbienteAPI.getVideos();
-    // videos.value = response.data;
-    
-    // Datos de ejemplo
+    // Datos de ejemplo con videos variados
     videos.value = [
       {
         id: 1,
-        title: 'Guía Completa de Reciclaje en República Dominicana',
-        description: 'Aprende a separar y reciclar correctamente los diferentes tipos de residuos.',
-        thumbnail: '/images/video1.jpg',
-        url: 'https://example.com/video1',
-        duration: '15:30',
-        views: 1250,
-        date: '2024-01-15',
-        category: 'reciclaje'
+        title: "Cómo reciclar en casa",
+        description: "Aprende las técnicas básicas para separar y reciclar los residuos de tu hogar.",
+        url: "https://www.youtube.com/watch?v=uW9Qk0OAPio",
+        thumbnail: "https://img.youtube.com/vi/uW9Qk0OAPio/hqdefault.jpg",
+        category: "reciclaje",
+        duration: "12:45",
+        views: 890,
+        date: "2025-01-15 10:00:00"
       },
       {
         id: 2,
-        title: 'Conservación de Especies Endémicas',
-        description: 'Conoce las especies únicas de la República Dominicana y cómo protegerlas.',
-        thumbnail: '/images/video2.jpg',
-        url: 'https://example.com/video2',
-        duration: '22:45',
-        views: 890,
-        date: '2024-01-10',
-        category: 'conservacion'
+        title: "Guía completa de conservación del agua",
+        description: "Descubre métodos efectivos para conservar el agua en tu vida diaria.",
+        url: "https://www.youtube.com/watch?v=uW9Qk0OAPio",
+        thumbnail: "https://img.youtube.com/vi/uW9Qk0OAPio/hqdefault.jpg",
+        category: "conservacion",
+        duration: "15:30",
+        views: 1250,
+        date: "2025-01-10 14:30:00"
+      },
+      {
+        id: 3,
+        title: "Impacto del cambio climático en los ecosistemas",
+        description: "Análisis detallado de cómo el cambio climático afecta la biodiversidad mundial.",
+        url: "https://www.youtube.com/watch?v=uW9Qk0OAPio",
+        thumbnail: "https://img.youtube.com/vi/uW9Qk0OAPio/hqdefault.jpg",
+        category: "cambio_climatico",
+        duration: "22:15",
+        views: 2100,
+        date: "2025-01-05 09:15:00"
+      },
+      {
+        id: 4,
+        title: "Biodiversidad en América Latina",
+        description: "Explora la riqueza de especies y ecosistemas únicos en Latinoamérica.",
+        url: "https://www.youtube.com/watch?v=uW9Qk0OAPio",
+        thumbnail: "https://img.youtube.com/vi/uW9Qk0OAPio/hqdefault.jpg",
+        category: "biodiversidad",
+        duration: "18:40",
+        views: 1560,
+        date: "2024-12-28 16:45:00"
+      },
+      {
+        id: 5,
+        title: "Compostaje para principiantes",
+        description: "Aprende a crear tu propio compost con materiales orgánicos de tu hogar.",
+        url: "https://www.youtube.com/watch?v=uW9Qk0OAPio",
+        thumbnail: "https://img.youtube.com/vi/uW9Qk0OAPio/hqdefault.jpg",
+        category: "reciclaje",
+        duration: "10:20",
+        views: 980,
+        date: "2024-12-20 11:20:00"
+      },
+      {
+        id: 6,
+        title: "Energías renovables del futuro",
+        description: "Conoce las últimas innovaciones en energías limpias y sostenibles.",
+        url: "https://www.youtube.com/watch?v=uW9Qk0OAPio",
+        thumbnail: "https://img.youtube.com/vi/uW9Qk0OAPio/hqdefault.jpg",
+        category: "cambio_climatico",
+        duration: "25:10",
+        views: 1890,
+        date: "2024-12-15 13:10:00"
       }
     ];
   } catch (error) {
@@ -163,6 +223,12 @@ onMounted(async () => {
   padding: 2rem 0;
   min-height: 100vh;
   background: #f8f9fa;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .page-header {
@@ -291,7 +357,6 @@ onMounted(async () => {
     margin-bottom: 1rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -370,25 +435,11 @@ onMounted(async () => {
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 1.5rem;
-}
-
-.video-placeholder {
-  height: 400px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  background: #333;
-
-  i {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.7;
-  }
-
-  p {
-    margin: 0.25rem 0;
+  
+  iframe {
+    display: block;
+    width: 100%;
+    border: none;
   }
 }
 
@@ -421,8 +472,16 @@ onMounted(async () => {
     max-height: 95vh;
   }
 
-  .video-placeholder {
+  .video-wrapper iframe {
     height: 250px;
+  }
+  
+  .video-player {
+    padding: 1.5rem;
+  }
+  
+  .page-header h1 {
+    font-size: 2rem;
   }
 }
 </style>

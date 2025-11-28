@@ -114,6 +114,8 @@ import yordalisImg from '@/assets/team/yordalis.png';
 import enmanuelImg from '@/assets/team/enmanuel.jpg';
 import anthonyImg from '@/assets/team/anthony.jpg';
 import neftaliImg from '@/assets/team/neftali.jpg';
+import jahzeelImg from '@/assets/team/jahzeel.jpg';
+import sebastianImg from '@/assets/team/sebastian.jpg';
 
 
 
@@ -138,7 +140,7 @@ const developers = ref<Developer[]>([
   {
     id: 1,
     nombre: 'Patryck Yandell Jimenez Ogando',
-    rol: 'Desarrollador Frontend',
+    rol: 'Desarrollador Frontend & Líder de Proyecto',
     matricula: '2023-1953',
     foto: patryckImg,
     telefono: '(829) 429-1048',
@@ -153,7 +155,7 @@ const developers = ref<Developer[]>([
     matricula: '2023-1719',
     foto: yordalisImg,
     telefono: '(809) 994-0927',
-    telegram: '',
+    telegram: 'https://t.me/yoidali',
     email: 'herrerayordalis@gmail.com',
     habilidades: ['JavaScript','TypeScript', 'Python', 'Flutter', 'Vue', 'HTML', 'CSS', 'Ionic']
   },
@@ -182,25 +184,35 @@ const developers = ref<Developer[]>([
    {
     id: 5,
     nombre: 'Reynaldo Sebastian Lopez Terrero',
-    rol: '',
+    rol: 'Desarrollador Full Stack',
     matricula: '2023-0201',
-    foto: '',
+    foto: sebastianImg,
     telefono: '(829) 380-1726',
-    telegram: '',
+    telegram: 'http://t.me/AA_Seba_L',
     email: 'codebastiandev@gmail.com',
-    habilidades: ['']
-  }
-  ,
+    habilidades: ['react.js','JavaScript','PHP','Ionic','TypeScript','Vue.js']
+  },
    {
     id: 6,
     nombre: 'Enmanuel De Jesus Pichardo Salas',
-    rol: '',
+    rol: 'Desaarrollador Backend',
     matricula: '2022-1341',
     foto: enmanuelImg,
     telefono: '(849) 343-0203',
-    telegram: '',
+    telegram: 'http://t.me/EnmanuelPS96',
     email: 'enmanueldjpichardos@gmail.com',
-    habilidades: ['']
+    habilidades: ['ionic','react','JavaScript','vue.js','typescript','ionic']
+  },
+  {
+    id: 7,
+    nombre: 'Jahzeel Benzan De La Cruz',
+    rol: 'Desarrollador backend',
+    matricula: '2023-0298',
+    foto: jahzeelImg,
+    telefono: '(809) 308-2042',
+    telegram: 'http://t.me/JahzBen',
+    email: 'jahzeelbenzan@hotmail.com',
+    habilidades: ['Vue.js','JavaScript','TypeScript','dotnet','node.js','SQL','ionic']
   }
 ]);
 
