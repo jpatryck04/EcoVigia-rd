@@ -40,7 +40,7 @@
         >
           <div class="news-image">
             <img 
-              :src="news.imagen || '/images/news-placeholder.jpg'" 
+              :src="getNewsImage(news)" 
               :alt="news.titulo"
               @error="handleImageError"
             />
@@ -99,6 +99,12 @@ import { medioAmbienteAPI } from '@/services/api';
 import { formatDate, truncateText } from '@/utils';
 import type { News } from '@/types';
 
+// Importar imágenes locales desde assets
+import newsPlaceholder from '@/assets/images/news-placeholder.jpg';
+import reforestacionImg from '@/assets/images/noticias/reforestacion.png';
+import conservacionMarinaImg from '@/assets/images/noticias/conservacion-marina.png';
+import reciclajeImg from '@/assets/images/noticias/reciclaje.png';
+
 const router = useRouter();
 
 const news = ref<News[]>([]);
@@ -135,6 +141,26 @@ const filteredNews = computed(() => {
 
   return filtered;
 });
+
+// Función para obtener la imagen correcta
+const getNewsImage = (newsItem: News) => {
+  // Si ya tiene una imagen URL, usarla
+  if (newsItem.imagen && newsItem.imagen.startsWith('http')) {
+    return newsItem.imagen;
+  }
+  
+  // Asignar imágenes locales basadas en categoría o ID
+  switch (newsItem.id) {
+    case 1:
+      return reforestacionImg;
+    case 2:
+      return conservacionMarinaImg;
+    case 3:
+      return reciclajeImg;
+    default:
+      return newsItem.imagen || newsPlaceholder;
+  }
+};
 
 const loadNews = async (page: number = 1) => {
   try {
@@ -176,12 +202,10 @@ const viewNewsDetail = (newsItem: News) => {
   });
 };
 
-
-
-
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement;
-  target.src = '/images/news-placeholder.jpg';
+  // Usar el placeholder importado desde assets
+  target.src = newsPlaceholder;
 };
 
 // Datos de ejemplo para desarrollo
@@ -191,7 +215,7 @@ const getSampleNews = (): News[] => {
       id: 1,
       titulo: 'Ministerio de Medio Ambiente lanza programa de reforestación nacional',
       contenido: 'El Ministerio de Medio Ambiente y Recursos Naturales inició un ambicioso programa de reforestación que busca plantar más de 5 millones de árboles en las principales cuencas hidrográficas del país. El proyecto involucra a comunidades locales y organizaciones ambientalistas.',
-      imagen: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=600',
+      imagen: reforestacionImg, // ← IMAGEN LOCAL
       fecha: new Date('2024-01-15').toISOString(),
       autor: 'Ministerio de Medio Ambiente',
       categoria: 'Reforestación',
@@ -202,7 +226,7 @@ const getSampleNews = (): News[] => {
       id: 2,
       titulo: 'RD fortalece protección de especies marinas en peligro',
       contenido: 'Nuevas medidas de conservación para proteger a las tortugas marinas y manatíes en las costas dominicanas. Se establecen zonas de protección especial y programas de monitoreo.',
-      imagen: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=600',
+      imagen: conservacionMarinaImg, // ← IMAGEN LOCAL
       fecha: new Date('2024-01-12').toISOString(),
       autor: 'Departamento de Vida Silvestre',
       categoria: 'Conservación Marina',
@@ -213,12 +237,34 @@ const getSampleNews = (): News[] => {
       id: 3,
       titulo: 'Iniciativa de reciclaje logra recolectar 50 toneladas de plástico',
       contenido: 'El programa "RD Limpia" supera expectativas en su primer trimestre, promoviendo la economía circular y reduciendo la contaminación por plásticos.',
-      imagen: 'https://images.unsplash.com/photo-1585516514286-2d6c153200de?w=600',
+      imagen: reciclajeImg, // ← IMAGEN LOCAL (CORREGIDO)
       fecha: new Date('2024-01-10').toISOString(),
       autor: 'Dirección de Residuos Sólidos',
       categoria: 'Reciclaje',
       vistas: 756,
       likes: 45
+    },
+    {
+      id: 4,
+      titulo: 'Nueva área protegida declarada en la Cordillera Central',
+      contenido: 'El gobierno declara nueva zona de conservación para proteger especies endémicas y fuentes de agua en la región montañosa.',
+      imagen: newsPlaceholder, // ← PLACEHOLDER
+      fecha: new Date('2024-01-08').toISOString(),
+      autor: 'Dirección de Áreas Protegidas',
+      categoria: 'Conservación',
+      vistas: 920,
+      likes: 78
+    },
+    {
+      id: 5,
+      titulo: 'Programa de educación ambiental llega a 50,000 estudiantes',
+      contenido: 'Iniciativa del Ministerio busca crear conciencia ambiental en las nuevas generaciones a través de talleres y actividades prácticas.',
+      imagen: newsPlaceholder, // ← PLACEHOLDER
+      fecha: new Date('2024-01-05').toISOString(),
+      autor: 'Departamento de Educación Ambiental',
+      categoria: 'Educación',
+      vistas: 680,
+      likes: 52
     }
   ];
 };

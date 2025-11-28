@@ -45,8 +45,8 @@ export class NotificationService {
     const appStore = useAppStore();
     appStore.addNotification({
       message,
-      type,
-      read: false
+      type
+      // Removemos 'read: false' porque no está en la interfaz
     });
   }
 }

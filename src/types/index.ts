@@ -33,7 +33,7 @@ export interface EnvironmentalReport {
   foto: string;
   latitud: number;
   longitud: number;
-  fecha: string;
+  fecha: string; 
   estado: 'pendiente' | 'en_proceso' | 'resuelto' | 'rechazado';
   comentario?: string;
   categoria: string;
@@ -51,6 +51,7 @@ export interface News {
   vistas: number;
   likes: number;
 }
+
 
 // Nueva interfaz para medidas ambientales
 export interface EnvironmentalMeasure {
@@ -78,4 +79,15 @@ export interface SingleNewsApiResponse {
   data: News;
   message?: string;
   status?: string;
+}
+
+export interface Regulation {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  categoria: string;
+  tipo: string; // ✅ AGREGAR ESTA PROPIEDAD
+  fecha: string;
+  numero: string;
+  archivo?: string;
 }

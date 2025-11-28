@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User, EnvironmentalReport } from '@/types';
 
-// Definir interface para Notification
+// Definir interface para Notification corregida
 interface AppNotification {
   id: string;
   message: string;
@@ -59,11 +59,13 @@ export const useAppStore = defineStore('app', () => {
     }
   };
 
-  const addNotification = (notification: Omit<AppNotification, 'id' | 'timestamp'>) => {
+  const addNotification = (notification: { message: string; type: 'info' | 'success' | 'warning' | 'error' }) => {
     const newNotification: AppNotification = {
       id: Date.now().toString(),
-      timestamp: new Date(),
-      ...notification
+      message: notification.message,
+      type: notification.type,
+      read: false,
+      timestamp: new Date()
     };
     notifications.value.unshift(newNotification);
   };

@@ -203,19 +203,41 @@ const features = ref([
 
 const featuredAreas = ref<ProtectedArea[]>([]);
 const newsItems = ref<News[]>([
-  {
+    {
     id: 1,
-    titulo: 'Nueva iniciativa de reforestación',
-    contenido: 'El Ministerio lanza programa de reforestación en zonas afectadas...',
-    imagen: '/images/news1.jpg',
-    fecha: new Date().toISOString(),
+    titulo: 'Ministerio de Medio Ambiente lanza programa de reforestación nacional',
+    contenido: 'El Ministerio de Medio Ambiente y Recursos Naturales inició un ambicioso programa de reforestación que busca plantar más de 5 millones de árboles en las principales cuencas hidrográficas del país. El proyecto involucra a comunidades locales y organizaciones ambientalistas. Esta iniciativa forma parte del plan "Quisqueya Verde" que busca recuperar las áreas degradadas y promover la conservación de la biodiversidad dominicana.\n\nEl programa incluye la creación de viveros comunitarios, capacitación en técnicas de reforestación y monitoreo continuo de las áreas intervenidas. Se espera que este esfuerzo contribuya significativamente a la mitigación del cambio climático y a la protección de nuestras fuentes de agua.',
+    imagen: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=800',
+    fecha: new Date('2024-01-15').toISOString(),
     autor: 'Ministerio de Medio Ambiente',
     categoria: 'Reforestación',
-    vistas: 150,
+    vistas: 1250,
+    likes: 89
+  },
+  {
+    id: 2,
+    titulo: 'RD fortalece protección de especies marinas en peligro',
+    contenido: 'Nuevas medidas de conservación para proteger a las tortugas marinas y manatíes en las costas dominicanas. Se establecen zonas de protección especial y programas de monitoreo continuo en las principales playas de anidación.\n\nEl programa incluye la vigilancia de playas durante la temporada de desove, protección de nidos y educación a comunidades costeras. También se han establecido alianzas con organizaciones internacionales para el rescate y rehabilitación de especies marinas en peligro.',
+    imagen: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800',
+    fecha: new Date('2024-01-12').toISOString(),
+    autor: 'Departamento de Vida Silvestre',
+    categoria: 'Conservación Marina',
+    vistas: 890,
+    likes: 67
+  },
+  {
+    id: 3,
+    titulo: 'Iniciativa de reciclaje logra recolectar 50 toneladas de plástico',
+    contenido: 'El programa "RD Limpia" supera expectativas en su primer trimestre, promoviendo la economía circular y reduciendo la contaminación por plásticos. La iniciativa ha involucrado a más de 100 comunidades en todo el país.\n\nLos materiales recolectados son procesados en centros de acopio y transformados en nuevos productos, creando oportunidades de empleo verde y reduciendo la presión sobre los vertederos. El programa también incluye campañas educativas sobre separación de residuos y reciclaje.',
+    imagen: 'https://images.unsplash.com/photo-1585516514286-2d6c153200de?w=800',
+    fecha: new Date('2024-01-10').toISOString(),
+    autor: 'Dirección de Residuos Sólidos',
+    categoria: 'Reciclaje',
+    vistas: 756,
     likes: 45
   }
-  // Agregar más noticias de ejemplo
 ]);
+  
 
 const parallaxStyle = computed(() => ({
   transform: `translateY(${parallaxOffset.value * 0.5}px)`
