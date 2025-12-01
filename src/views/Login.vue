@@ -117,12 +117,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { isValidEmail, isValidCedula } from '@/utils';
-import { volunteerValidator } from '@/utils/validators';
+import type { User } from '@/types';
 import RecoveryModal from '@/components/RecoveryModal.vue';
 
 const router = useRouter();
@@ -203,22 +203,22 @@ const handleLogin = async () => {
 const handleAdminLogin = async () => {
   // Verificar credenciales de admin
   if (form.email === ADMIN_CREDENTIALS.email && form.password === ADMIN_CREDENTIALS.password) {
-    const adminUser = {
+    const adminUser: User = {
       id: 'admin-001',
       cedula: '00000000000',
       nombre: 'Administrador Ministerio',
       email: ADMIN_CREDENTIALS.email,
       telefono: '(809) 567-4300',
-      role: 'admin'
+      role: 'admin' as const
     };
 
-    authStore.login(adminUser, 'admin-token-' + Date.now());
+    authStore.login(adminUser, 'admin-token-' + Date.now(), 'admin');
     appStore.addNotification({
       message: 'Bienvenido, Administrador',
       type: 'success'
     });
     
-    router.push('/admin/dashboard');
+    router.push('/admin');
   } else {
     appStore.addNotification({
       message: 'Credenciales de administrador incorrectas',
@@ -230,18 +230,18 @@ const handleAdminLogin = async () => {
 const handleVolunteerLogin = async () => {
   try {
     // Simular login de voluntario (reemplazar con API real)
-    const mockVolunteer = {
+    const mockVolunteer: User = {
       id: 'vol-' + Date.now(),
       cedula: form.cedula,
-      nombre: 'Voluntario Ejemplo', // En realidad vendría de la API
+      nombre: 'Voluntario Ejemplo',
       email: form.email,
       telefono: '(809) 000-0000',
-      role: 'volunteer'
+      role: 'volunteer' as const
     };
 
     const mockToken = 'volunteer-token-' + Date.now();
     
-    authStore.login(mockVolunteer, mockToken);
+    authStore.login(mockVolunteer, mockToken, 'volunteer');
     appStore.addNotification({
       message: '¡Bienvenido de vuelta!',
       type: 'success'

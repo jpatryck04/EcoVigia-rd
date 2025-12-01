@@ -1,3 +1,6 @@
+export * from './services';
+
+
 // Tipos básicos para empezar
 export interface User {
   id: string;
@@ -6,6 +9,7 @@ export interface User {
   email: string;
   telefono: string;
   avatar?: string;
+  role?: 'volunteer' | 'admin'; // ✅ Agregar esta propiedad
 }
 
 export interface ProtectedArea {
@@ -50,6 +54,7 @@ export interface News {
   categoria: string;
   vistas: number;
   likes: number;
+estado?: 'publicada' | 'borrador' | 'archivada';
 }
 
 
