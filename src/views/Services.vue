@@ -21,10 +21,12 @@
               </span>
             </div>
             <div class="service-actions">
-              <button class="btn-info" @click="viewServiceDetails(service)">
+              <button class="btn-info" @click="openServiceDetails(service)">
+                <i class="fas fa-info-circle"></i>
                 Más Información
               </button>
               <button v-if="service.hasForm" class="btn-primary" @click="openServiceForm(service)">
+                <i class="fas fa-file-alt"></i>
                 Solicitar
               </button>
             </div>
@@ -39,7 +41,7 @@
           <div class="contact-card">
             <i class="fas fa-phone-alt"></i>
             <h3>Línea Directa</h3>
-            <p><strong> 849-356-6400 o 809-200-6400</strong></p>
+            <p><strong>809-567-4300</strong></p>
             <span>Lunes a Viernes 8:00 AM - 4:00 PM</span>
           </div>
           
@@ -53,7 +55,7 @@
           <div class="contact-card">
             <i class="fas fa-map-marker-alt"></i>
             <h3>Oficinas Centrales</h3>
-            <p><strong>Avenida Cayetano Germosén esq. Avenida Gregorio Luperón, Ensanche El Pedregal, Santo Domingo, R.D. </strong></p>
+            <p><strong>Av. Cayetano Germosén esq. Av. Gregorio Luperón Ensanche El Pedregal</strong></p>
             <span>Distrito Nacional</span>
           </div>
           
@@ -85,13 +87,31 @@
           </div>
         </div>
       </div>
+
+      <!-- Modales -->
+      <ServiceModal
+        v-if="selectedService && showDetailsModal"
+        :service="selectedService"
+        @close="closeServiceModal"
+        @open-form="openFormFromModal"
+      />
+
+      <ServiceForm
+        v-if="selectedService && showFormModal"
+        :service="selectedService"
+        @close="closeFormModal"
+        @submitted="handleFormSubmission"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import ServiceModal from '@/components/common/ServiceModal.vue';
+import ServiceForm from '@/components/common/ServiceForm.vue';
 
+// Definir tipos localmente si no tienes el archivo types
 interface Service {
   id: number;
   icon: string;
@@ -99,6 +119,16 @@ interface Service {
   description: string;
   features: string[];
   hasForm: boolean;
+  details?: string;
+  requirements?: string[];
+  process?: Array<{
+    step: string;
+    title: string;
+    description: string;
+    duration: string;
+  }>;
+  processTime?: string;
+  requiredDocuments?: string[];
 }
 
 interface Procedure {
@@ -109,6 +139,7 @@ interface Procedure {
   requirements?: string[];
 }
 
+// Datos reactivos
 const services = ref<Service[]>([
   {
     id: 1,
@@ -116,7 +147,49 @@ const services = ref<Service[]>([
     title: 'Permisos Ambientales',
     description: 'Autorizaciones para proyectos, obras o actividades que puedan afectar el medio ambiente.',
     features: ['Evaluación de impacto', 'Consultoría técnica', 'Seguimiento ambiental'],
-    hasForm: true
+    hasForm: true,
+    details: 'Los permisos ambientales son requisito obligatorio para cualquier proyecto que pueda generar impactos significativos en el medio ambiente. Incluyen evaluaciones de impacto ambiental, estudios técnicos y planes de gestión ambiental.',
+    requirements: [
+      'Formulario de solicitud completo',
+      'Cédula o pasaporte del solicitante',
+      'Croquis de ubicación del proyecto',
+      'Descripción detallada del proyecto',
+      'Estudio de impacto ambiental preliminar'
+    ],
+    process: [
+      {
+        step: '1',
+        title: 'Recepción de solicitud',
+        description: 'Revisión de documentación inicial y asignación de número de expediente.',
+        duration: '1-2 días'
+      },
+      {
+        step: '2',
+        title: 'Evaluación técnica',
+        description: 'Análisis de documentación por especialistas ambientales.',
+        duration: '5-7 días'
+      },
+      {
+        step: '3',
+        title: 'Visita de campo',
+        description: 'Inspección en el sitio para verificar condiciones ambientales.',
+        duration: '2-3 días'
+      },
+      {
+        step: '4',
+        title: 'Emisión de resolución',
+        description: 'Entrega del permiso ambiental o solicitud de información adicional.',
+        duration: '3-5 días'
+      }
+    ],
+    processTime: '15-20 días hábiles',
+    requiredDocuments: [
+      'Formulario de solicitud (PDF)',
+      'Copia de cédula/pasaporte',
+      'Croquis de ubicación',
+      'Estudio de impacto ambiental',
+      'Plan de gestión ambiental'
+    ]
   },
   {
     id: 2,
@@ -124,7 +197,13 @@ const services = ref<Service[]>([
     title: 'Manejo Forestal',
     description: 'Servicios relacionados con la gestión sostenible de los recursos forestales.',
     features: ['Permisos de corta', 'Reforestación', 'Viveros forestales'],
-    hasForm: true
+    hasForm: true,
+    requiredDocuments: [
+      'Solicitud de aprovechamiento forestal',
+      'Plano del área a intervenir',
+      'Plan de manejo forestal',
+      'Estudio de impacto ambiental'
+    ]
   },
   {
     id: 3,
@@ -132,7 +211,13 @@ const services = ref<Service[]>([
     title: 'Recursos Hídricos',
     description: 'Gestión y protección de cuencas hidrográficas y recursos acuáticos.',
     features: ['Permisos de agua', 'Calidad del agua', 'Protección de cuencas'],
-    hasForm: true
+    hasForm: true,
+    requiredDocuments: [
+      'Solicitud de concesión de agua',
+      'Estudio de disponibilidad hídrica',
+      'Plan de uso eficiente del agua',
+      'Certificado de no contaminación'
+    ]
   },
   {
     id: 4,
@@ -140,7 +225,13 @@ const services = ref<Service[]>([
     title: 'Manejo de Residuos',
     description: 'Sistema integral para la gestión de residuos sólidos y peligrosos.',
     features: ['Plan de manejo', 'Autorizaciones', 'Auditorías ambientales'],
-    hasForm: true
+    hasForm: true,
+    requiredDocuments: [
+      'Plan de manejo de residuos',
+      'Caracterización de residuos',
+      'Certificado de capacitación del personal',
+      'Seguro de responsabilidad civil'
+    ]
   },
   {
     id: 5,
@@ -148,7 +239,13 @@ const services = ref<Service[]>([
     title: 'Vida Silvestre',
     description: 'Protección y conservación de especies de flora y fauna nativas.',
     features: ['Permisos de caza', 'Colección científica', 'Centros de rescate'],
-    hasForm: true
+    hasForm: true,
+    requiredDocuments: [
+      'Solicitud de permiso especial',
+      'Justificación científica o técnica',
+      'Plan de manejo de especies',
+      'Certificado de instalaciones adecuadas'
+    ]
   },
   {
     id: 6,
@@ -156,7 +253,8 @@ const services = ref<Service[]>([
     title: 'Educación Ambiental',
     description: 'Programas de concienciación y formación en temas ambientales.',
     features: ['Talleres', 'Charlas educativas', 'Material didáctico'],
-    hasForm: false
+    hasForm: false,
+    details: 'Programas diseñados para fomentar la conciencia ambiental en diferentes sectores de la sociedad, incluyendo escuelas, empresas y comunidades.'
   },
   {
     id: 7,
@@ -164,7 +262,13 @@ const services = ref<Service[]>([
     title: 'Denuncias Ambientales',
     description: 'Canal para reportar violaciones a las leyes ambientales.',
     features: ['Reporte anónimo', 'Seguimiento', 'Acción inmediata'],
-    hasForm: true
+    hasForm: true,
+    requiredDocuments: [
+      'Descripción de la situación',
+      'Ubicación exacta',
+      'Evidencias fotográficas',
+      'Información de contacto (opcional)'
+    ]
   },
   {
     id: 8,
@@ -172,7 +276,8 @@ const services = ref<Service[]>([
     title: 'Información Ambiental',
     description: 'Acceso a datos, estadísticas y reportes sobre el medio ambiente.',
     features: ['Base de datos', 'Publicaciones', 'Indicadores'],
-    hasForm: false
+    hasForm: false,
+    details: 'Sistema de información ambiental que proporciona acceso a datos actualizados sobre calidad del aire, agua, suelos, biodiversidad y otros indicadores ambientales.'
   }
 ]);
 
@@ -214,16 +319,45 @@ const procedures = ref<Procedure[]>([
   }
 ]);
 
-const viewServiceDetails = (service: Service) => {
-  // Navegar a página de detalles del servicio
-  console.log('View service details:', service);
-  alert(`Más información sobre: ${service.title}\n\n${service.description}`);
+// Estado para modales
+const selectedService = ref<Service | null>(null);
+const showDetailsModal = ref(false);
+const showFormModal = ref(false);
+
+// Funciones para manejar los botones
+const openServiceDetails = (service: Service) => {
+  selectedService.value = service;
+  showDetailsModal.value = true;
+  showFormModal.value = false;
 };
 
 const openServiceForm = (service: Service) => {
-  // Abrir formulario de solicitud
-  console.log('Open service form:', service);
-  alert(`Formulario de solicitud para: ${service.title}`);
+  selectedService.value = service;
+  showFormModal.value = true;
+  showDetailsModal.value = false;
+};
+
+const openFormFromModal = () => {
+  if (selectedService.value) {
+    showDetailsModal.value = false;
+    showFormModal.value = true;
+  }
+};
+
+const closeServiceModal = () => {
+  selectedService.value = null;
+  showDetailsModal.value = false;
+};
+
+const closeFormModal = () => {
+  selectedService.value = null;
+  showFormModal.value = false;
+};
+
+const handleFormSubmission = (formData: any) => {
+  console.log('Form submitted:', formData);
+  // Aquí podrías redirigir a una página de confirmación o mostrar un mensaje
+  alert('✅ Solicitud enviada exitosamente. Recibirá un correo de confirmación en breve.');
 };
 </script>
 
@@ -266,6 +400,8 @@ const openServiceForm = (service: Service) => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   border: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     transform: translateY(-5px);
@@ -290,6 +426,10 @@ const openServiceForm = (service: Service) => {
 }
 
 .service-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
   h3 {
     color: #1b5e20;
     margin-bottom: 1rem;
@@ -300,6 +440,7 @@ const openServiceForm = (service: Service) => {
     color: #666;
     line-height: 1.6;
     margin-bottom: 1.5rem;
+    flex: 1;
   }
 }
 
@@ -323,6 +464,7 @@ const openServiceForm = (service: Service) => {
 .service-actions {
   display: flex;
   gap: 0.75rem;
+  margin-top: auto;
 
   button {
     padding: 0.6rem 1.2rem;
@@ -332,6 +474,11 @@ const openServiceForm = (service: Service) => {
     cursor: pointer;
     transition: all 0.3s ease;
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
   }
 
   .btn-primary {
@@ -340,6 +487,7 @@ const openServiceForm = (service: Service) => {
 
     &:hover {
       background: #144017;
+      transform: translateY(-2px);
     }
   }
 
@@ -350,6 +498,7 @@ const openServiceForm = (service: Service) => {
 
     &:hover {
       background: #bbdefb;
+      transform: translateY(-2px);
     }
   }
 }
@@ -381,9 +530,12 @@ const openServiceForm = (service: Service) => {
   border-radius: 12px;
   background: #f8f9fa;
   transition: transform 0.3s ease;
+  border: 1px solid #e0e0e0;
 
   &:hover {
-    transform: translateY(-3px);
+    transform: translateY(-5px);
+    border-color: #1b5e20;
+    box-shadow: 0 5px 15px rgba(27, 94, 32, 0.1);
   }
 
   i {
@@ -402,11 +554,13 @@ const openServiceForm = (service: Service) => {
     color: #1b5e20;
     font-size: 1.1rem;
     margin-bottom: 0.5rem;
+    font-weight: 600;
   }
 
   span {
     color: #666;
     font-size: 0.9rem;
+    display: block;
   }
 }
 

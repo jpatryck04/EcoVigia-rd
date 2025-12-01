@@ -15,38 +15,45 @@
           <router-link to="/noticias">Noticias</router-link>
           <router-link to="/voluntariado">Voluntariado</router-link>    
           <router-link to="/acerca-de">Acerca de</router-link>
-          <router-link to="/admin" class="admin-link">Panel de Administración</router-link>
 
           <!-- Menú de usuario según tipo de autenticación -->
           <div class="user-menu-container">
-            <template v-if="authStore.isAuthenticated && authStore.userType === 'volunteer'">
+            <template v-if="authStore.isAuthenticated">
               <div class="user-menu">
                 <span class="welcome-text">Hola, {{ authStore.user?.nombre }}</span>
+                
+                <!-- Enlace a Mis Reportes para voluntarios -->
+                <router-link 
+                  v-if="authStore.isVolunteer()" 
+                  to="/mis-reportes" 
+                  class="reports-link"
+                >
+                  Mis Reportes
+                </router-link>
+                
+                <!-- Enlace a Panel Admin para administradores -->
+                <router-link 
+                  v-if="authStore.isAdmin()" 
+                  to="/admin" 
+                  class="admin-link"
+                >
+                  Panel Admin
+                </router-link>
+                
                 <button @click="handleLogout" class="logout-btn">
                   <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                 </button>
               </div>
             </template>
-            <template v-else-if="authStore.isAuthenticated">
-              <div class="user-menu">
-                <span class="welcome-text">Hola, {{ authStore.user?.nombre }}</span>
-                <router-link to="/mis-reportes" class="reports-link">Mis Reportes</router-link>
-                <button @click="handleLogout" class="logout-btn">
-                  Cerrar Sesión
-                </button>
-              </div>
-            </template>
             <template v-else>
               <div class="auth-buttons">
-                <router-link to="/login-voluntario" class="login-btn">
-                  <i class="fas fa-sign-in-alt"></i> Voluntario
-                </router-link>
-                <router-link to="/voluntariado" class="register-btn">
-                  <i class="fas fa-user-plus"></i> Ser Voluntario
-                </router-link>
-                <router-link to="/login" class="login-link">
+                <router-link to="/login" class="login-btn">
                   <i class="fas fa-sign-in-alt"></i>
                   Ingresar
+                </router-link>
+                <router-link to="/voluntariado" class="register-btn">
+                  <i class="fas fa-user-plus"></i>
+                  Ser Voluntario
                 </router-link>
               </div>
             </template>
@@ -60,7 +67,7 @@
       <router-view />
     </main>
 
-    <!-- Footer ADAPTADO -->
+    <!-- Footer -->
     <footer class="app-footer">
       <div class="container">
         <p>&copy; 2025 EcoVigía RD - Ministerio de Medio Ambiente</p>
@@ -71,14 +78,17 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
 const router = useRouter();
 
-const isAuthenticated = computed(() => authStore.isAuthenticated);
+// Restaurar sesión al cargar la aplicación
+onMounted(() => {
+  authStore.restoreSession();
+});
 
 const handleLogout = () => {
   authStore.logout();
@@ -96,6 +106,7 @@ const handleLogout = () => {
   left: 0;
   right: 0;
   z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -112,6 +123,9 @@ const handleLogout = () => {
   font-weight: bold;
   color: white;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .nav-menu {
@@ -125,19 +139,22 @@ const handleLogout = () => {
   color: white;
   text-decoration: none;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background 0.3s ease;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-weight: 500;
 }
 
 .nav-menu a:hover,
 .nav-menu a.router-link-active {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
 }
 
 /* Contenedor del menú de usuario */
 .user-menu-container {
   display: flex;
   align-items: center;
+  margin-left: 1rem;
 }
 
 /* Menú de usuario autenticado */
@@ -150,19 +167,38 @@ const handleLogout = () => {
 .welcome-text {
   color: white;
   font-weight: 500;
+  font-size: 0.9rem;
 }
 
-.reports-link {
+.reports-link,
+.admin-link {
   color: white;
   text-decoration: none;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background 0.3s ease;
-  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.reports-link {
+  background: rgba(76, 175, 80, 0.3);
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
+.admin-link {
+  background: rgba(255, 152, 0, 0.3);
+  border: 1px solid rgba(255, 152, 0, 0.5);
 }
 
 .reports-link:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(76, 175, 80, 0.5);
+  transform: translateY(-1px);
+}
+
+.admin-link:hover {
+  background: rgba(255, 152, 0, 0.5);
+  transform: translateY(-1px);
 }
 
 /* Botones de autenticación */
@@ -179,51 +215,51 @@ const handleLogout = () => {
   gap: 0.5rem;
   color: white;
   text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background 0.3s ease;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .login-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .register-btn {
   background: #2e7d32;
+  border: 1px solid #2e7d32;
 }
 
 .login-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 .register-btn:hover {
   background: #1b5e20;
-}
-
-.login-link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.5rem 1rem !important;
+  transform: translateY(-1px);
 }
 
 .logout-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(244, 67, 54, 0.2);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .logout-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(244, 67, 54, 0.3);
+  transform: translateY(-1px);
 }
 
 .main-content {
@@ -238,15 +274,19 @@ const handleLogout = () => {
   text-align: center;
 }
 
-.admin-link {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.8rem;
-  text-decoration: none;
-  margin-top: 0.5rem;
-  display: inline-block;
+.app-footer .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
-.admin-link:hover {
+.app-footer p {
+  margin: 0.25rem 0;
+  color: #ccc;
+}
+
+.app-footer p:first-child {
+  font-weight: 500;
   color: white;
 }
 
@@ -255,23 +295,48 @@ const handleLogout = () => {
   .header-content {
     flex-direction: column;
     gap: 1rem;
+    padding: 1rem;
   }
   
   .nav-menu {
     flex-direction: column;
     gap: 1rem;
     width: 100%;
+    text-align: center;
   }
   
   .user-menu,
   .auth-buttons {
     flex-direction: column;
     width: 100%;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
   
   .user-menu-container {
     width: 100%;
+    margin-left: 0;
+    justify-content: center;
+  }
+  
+  .main-content {
+    margin-top: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-menu a {
+    padding: 0.75rem 1rem;
+    width: 100%;
+    text-align: center;
+  }
+  
+  .login-btn,
+  .register-btn,
+  .reports-link,
+  .admin-link,
+  .logout-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

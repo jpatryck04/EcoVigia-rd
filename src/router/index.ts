@@ -117,11 +117,35 @@ const routes = [
      👑 RUTAS DE ADMINISTRADOR
   -----------------------------*/
 {
-  path: '/admin',
-  name: 'Admin',
-  component: () => import('@/views/AdminPanel.vue'),
-  meta: { requiresAuth: true, requiresAdmin: true }
-},
+    path: '/admin',
+    name: 'AdminDashboard', // Cambiado de 'Admin' a 'AdminDashboard'
+    component: () => import('@/views/AdminDashboard.vue'), // Cambiado de AdminPanel.vue
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/reportes', // Agregar esta ruta que falta
+    name: 'AdminReports',
+    component: () => import('@/views/AdminReports.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/voluntarios',
+    name: 'AdminVolunteers',
+    component: () => import('@/views/AdminVolunteers.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/areas',
+    name: 'AdminAreas',
+    component: () => import('@/views/AdminAreas.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/noticias',
+    name: 'AdminNews',
+    component: () => import('@/views/AdminNews.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
 
   // Ruta de fallback
   {

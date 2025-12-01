@@ -153,7 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
     loginAdmin,
     logout,
     isAdmin,
-    isVolunteer,
+    isVolunteer,  
     restoreSession,
     checkAuth,
     isVolunteerApproved,
