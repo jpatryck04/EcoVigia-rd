@@ -281,7 +281,10 @@ const hasActiveFilters = computed(() => {
   return filters.value.search || filters.value.estado || filters.value.categoria;
 });
 
-const getStatusText = (status: string) => {
+// Línea ~121: Cambiar esta función
+const getStatusText = (status: string | undefined) => {
+  if (!status) return 'Sin estado';
+  
   const statusMap: { [key: string]: string } = {
     publicada: 'Publicada',
     borrador: 'Borrador',
