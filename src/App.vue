@@ -13,7 +13,8 @@
           <router-link to="/areas-protegidas">Áreas Protegidas</router-link>
           <router-link to="/servicios">Servicios</router-link>          
           <router-link to="/noticias">Noticias</router-link>
-          <router-link to="/voluntariado">Voluntariado</router-link>    
+          <router-link to="/voluntariado">Voluntariado</router-link>
+          <router-link to="/equipo">Nuestro Equipo</router-link>   
           <router-link to="/acerca-de">Acerca de</router-link>
 
           <!-- Menú de usuario según tipo de autenticación -->

@@ -6,74 +6,94 @@
         <p>Conoce al equipo comprometido con la protección ambiental de RD</p>
       </div>
 
-      <!-- Filtros por departamento -->
-      <div class="department-filters">
-        <button 
-          v-for="dept in departments" 
-          :key="dept.id"
-          :class="['dept-btn', { active: activeDepartment === dept.id }]"
-          @click="setActiveDepartment(dept.id)"
-        >
-          {{ dept.name }}
-        </button>
+      <!-- Loading State -->
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando información del equipo...</p>
       </div>
 
-      <!-- Grid del equipo -->
-      <div class="team-grid">
-        <div 
-          v-for="member in filteredTeam" 
-          :key="member.id"
-          class="team-card"
-        >
-          <div class="member-photo">
-            <img :src="member.foto" :alt="member.nombre" />
-            <div class="member-overlay">
-              <div class="social-links">
-                <a v-if="member.email" :href="`mailto:${member.email}`">
+      <!-- Contenido Principal -->
+      <div v-else>
+        <!-- Filtros por departamento -->
+        <div class="department-filters">
+          <button 
+            v-for="dept in departments" 
+            :key="dept.id"
+            :class="['dept-btn', { active: activeDepartment === dept.id }]"
+            @click="setActiveDepartment(dept.id)"
+          >
+            {{ dept.name }}
+          </button>
+        </div>
+
+        <!-- Grid del equipo -->
+        <div class="team-grid">
+          <div 
+            v-for="member in filteredTeam" 
+            :key="member.id"
+            class="team-card"
+          >
+            <div class="member-photo">
+              <img 
+                :src="member.foto || '/images/team-placeholder.jpg'" 
+                :alt="member.nombre"
+                @error="handleImageError"
+              />
+              <div class="member-overlay">
+                <div class="social-links">
+                  <a v-if="member.email" :href="`mailto:${member.email}`" title="Enviar email">
+                    <i class="fas fa-envelope"></i>
+                  </a>
+                  <a v-if="member.telefono" :href="`tel:${member.telefono}`" title="Llamar">
+                    <i class="fas fa-phone"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="member-info">
+              <h3>{{ member.nombre }}</h3>
+              <p class="position">{{ member.cargo }}</p>
+              <p class="department">{{ member.departamento }}</p>
+              <p class="bio">{{ member.bio || 'Profesional dedicado a la protección ambiental.' }}</p>
+              <div class="member-contact">
+                <div v-if="member.email" class="contact-item">
                   <i class="fas fa-envelope"></i>
-                </a>
-                <a v-if="member.telefono" :href="`tel:${member.telefono}`">
+                  <span>{{ member.email }}</span>
+                </div>
+                <div v-if="member.telefono" class="contact-item">
                   <i class="fas fa-phone"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-          <div class="member-info">
-            <h3>{{ member.nombre }}</h3>
-            <p class="position">{{ member.cargo }}</p>
-            <p class="department">{{ member.departamento }}</p>
-            <p class="bio">{{ member.bio }}</p>
-            <div class="member-contact">
-              <div v-if="member.email" class="contact-item">
-                <i class="fas fa-envelope"></i>
-                <span>{{ member.email }}</span>
-              </div>
-              <div v-if="member.telefono" class="contact-item">
-                <i class="fas fa-phone"></i>
-                <span>{{ member.telefono }}</span>
-              </div>
-              <div v-if="member.extension" class="contact-item">
-                <i class="fas fa-hashtag"></i>
-                <span>Ext. {{ member.extension }}</span>
+                  <span>{{ formatPhone(member.telefono) }}</span>
+                </div>
+                <div v-if="member.extension" class="contact-item">
+                  <i class="fas fa-hashtag"></i>
+                  <span>Ext. {{ member.extension }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Estadísticas del equipo -->
-      <div class="team-stats">
-        <div class="stat-card">
-          <div class="stat-number">{{ teamMembers.length }}</div>
-          <div class="stat-label">Miembros del Equipo</div>
+        <!-- Estado vacío -->
+        <div v-if="filteredTeam.length === 0 && !loading" class="empty-state">
+          <i class="fas fa-users"></i>
+          <h3>No hay miembros en este departamento</h3>
+          <p>Selecciona otro departamento para ver más equipo</p>
         </div>
-        <div class="stat-card">
-          <div class="stat-number">{{ uniqueDepartments.length }}</div>
-          <div class="stat-label">Departamentos</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number">{{ yearsExperience }} años</div>
-          <div class="stat-label">Experiencia Promedio</div>
+
+        <!-- Estadísticas del equipo -->
+        <div class="team-stats">
+          <div class="stat-card">
+            <div class="stat-number">{{ teamMembers.length }}</div>
+            <div class="stat-label">Miembros del Equipo</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ uniqueDepartments.length }}</div>
+            <div class="stat-label">Departamentos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ yearsExperience }} años</div>
+            <div class="stat-label">Experiencia Promedio</div>
+          </div>
         </div>
       </div>
     </div>
@@ -82,110 +102,211 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { medioAmbienteAPI } from '@/services/api';
+import MinistroImg from '@/assets/MinistryTeam/ministro.jpg';
+import ViceministroCCImg from '@/assets/MinistryTeam/viceministra-cambio-climatico.jpg';
+import ViceministroAPBImg from '@/assets/MinistryTeam/viceministro-areas-protegidas.jpg';
+import ViceministroGAImg from '@/assets/MinistryTeam/viceministro-gestion-ambiental.jpg';
+import ViceministroRCMImg from '@/assets/MinistryTeam/viceministro-costeros-marinos.jpg';
+import ViceministroRFImg from '@/assets/MinistryTeam/viceministro-recursos-forestales.jpg';
+
 
 interface TeamMember {
   id: number;
   nombre: string;
   cargo: string;
   departamento: string;
-  foto: string;
-  bio: string;
+  foto?: string;
+  bio?: string;
   email?: string;
   telefono?: string;
   extension?: string;
-  experiencia: number;
+  experiencia?: number;
+  area_especializacion?: string;
+  fecha_ingreso?: string;
 }
 
-const departments = ref([
-  { id: 'todos', name: 'Todos' },
-  { id: 'conservacion', name: 'Conservación' },
-  { id: 'educacion', name: 'Educación Ambiental' },
-  { id: 'investigacion', name: 'Investigación' },
-  { id: 'operaciones', name: 'Operaciones' },
-  { id: 'legal', name: 'Asuntos Legales' }
-]);
-
+const loading = ref(true);
 const activeDepartment = ref('todos');
 const teamMembers = ref<TeamMember[]>([]);
 
+// Departamentos dinámicos basados en los datos de la API
+const departments = computed(() => {
+  const deptList = [
+    { id: 'todos', name: 'Todos' }
+  ];
+  
+  // Agregar departamentos únicos de los miembros
+  const uniqueDepts = [...new Set(teamMembers.value.map(member => member.departamento))];
+  
+  uniqueDepts.forEach(dept => {
+    if (dept && dept.trim()) {
+      deptList.push({
+        id: dept.toLowerCase().replace(/\s+/g, '-'),
+        name: dept
+      });
+    }
+  });
+  
+  return deptList;
+});
+
 const filteredTeam = computed(() => {
   if (activeDepartment.value === 'todos') return teamMembers.value;
-  return teamMembers.value.filter(member => 
-    member.departamento.toLowerCase() === activeDepartment.value
-  );
+  
+  return teamMembers.value.filter(member => {
+    const memberDept = member.departamento?.toLowerCase().replace(/\s+/g, '-') || '';
+    return memberDept === activeDepartment.value;
+  });
 });
 
-// CORRECCIÓN: Evitar el uso de Set con spread operator
 const uniqueDepartments = computed(() => {
-  const depts = teamMembers.value.map(member => member.departamento);
-  const unique = new Set(depts);
-  const result: string[] = [];
-  unique.forEach(dept => result.push(dept));
-  return result;
+  const depts = teamMembers.value
+    .map(member => member.departamento)
+    .filter(dept => dept && dept.trim());
+  
+  return [...new Set(depts)];
 });
-
-// ALTERNATIVA MÁS SEGURA:
-// const uniqueDepartments = computed(() => {
-//   const depts = teamMembers.value.map(member => member.departamento);
-//   return depts.filter((dept, index) => depts.indexOf(dept) === index);
-// });
 
 const yearsExperience = computed(() => {
-  if (teamMembers.value.length === 0) return 0;
-  const total = teamMembers.value.reduce((sum, member) => sum + member.experiencia, 0);
-  return Math.round(total / teamMembers.value.length);
+  const membersWithExp = teamMembers.value.filter(member => member.experiencia);
+  
+  if (membersWithExp.length === 0) return 0;
+  
+  const total = membersWithExp.reduce((sum, member) => {
+    return sum + (member.experiencia || 0);
+  }, 0);
+  
+  return Math.round(total / membersWithExp.length);
 });
 
 const setActiveDepartment = (deptId: string) => {
   activeDepartment.value = deptId;
 };
 
-onMounted(async () => {
-  try {
-    // const response = await medioAmbienteAPI.getEquipo();
-    // teamMembers.value = response.data;
-    
-    // Datos de ejemplo
-    teamMembers.value = [
-      {
-        id: 1,
-        nombre: 'María González',
-        cargo: 'Directora de Conservación',
-        departamento: 'conservacion',
-        foto: '/images/team1.jpg',
-        bio: 'Más de 15 años de experiencia en conservación de biodiversidad. Lidera proyectos de protección de especies endémicas.',
-        email: 'maria.gonzalez@medioambiente.gob.do',
-        telefono: '(809) 555-0101',
-        extension: '101',
-        experiencia: 15
-      },
-      {
-        id: 2,
-        nombre: 'Carlos Rodríguez',
-        cargo: 'Coordinador de Educación Ambiental',
-        departamento: 'educacion',
-        foto: '/images/team2.jpg',
-        bio: 'Especialista en programas educativos y de concienciación ambiental para comunidades y escuelas.',
-        email: 'carlos.rodriguez@medioambiente.gob.do',
-        telefono: '(809) 555-0102',
-        extension: '102',
-        experiencia: 12
-      },
-      {
-        id: 3,
-        nombre: 'Ana Martínez',
-        cargo: 'Investigadora Principal',
-        departamento: 'investigacion',
-        foto: '/images/team3.jpg',
-        bio: 'Doctora en Ciencias Ambientales. Coordina investigaciones sobre cambio climático y sus efectos en RD.',
-        email: 'ana.martinez@medioambiente.gob.do',
-        extension: '103',
-        experiencia: 18
-      }
-    ];
-  } catch (error) {
-    console.error('Error loading team data:', error);
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  target.src = '/images/team-placeholder.jpg';
+};
+
+const formatPhone = (phone: string) => {
+  // Formatear número de teléfono para mejor visualización
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
   }
+  return phone;
+};
+
+// Datos de ejemplo para desarrollo
+const getSampleTeamData = (): TeamMember[] => {
+  return [
+    {
+      id: 1,
+      nombre: 'Armando Paíno Henríquez',
+      cargo: 'Ministro de Medio Ambiente y Recursos Naturales',
+      departamento: 'Dirección General',
+      foto: MinistroImg,
+      bio: 'Abogado especializado en derecho comercial internacional. Dirige la implementación de políticas ambientales y lideró el proceso de gestión integral de residuos sólidos desde DO Sostenible.',
+      email: 'paino.henriquez@medioambiente.gob.do',  // [AGREGADO: ejemplo institucional]
+      telefono: '8090000000',                          // [AGREGADO: no disponible públicamente]
+      extension: '100',                                // [AGREGADO: asignado ficticio]
+      experiencia: 25,                                 // [AGREGADO: basado en “más de 25 años en el sector privado”]
+      area_especializacion: 'Derecho comercial y gestión de residuos sólidos'
+    },
+    {
+      id: 2,
+      nombre: 'Ana Emilia Pimentel Rodríguez',
+      cargo: 'Viceministra de Cambio Climático y Sostenibilidad',
+      departamento: 'Cambio Climático y Sostenibilidad',
+      foto: ViceministroCCImg,
+      bio: 'Economista especializada en sostenibilidad, planificación y políticas públicas. Ha liderado estrategias nacionales relacionadas con residuos sólidos y cambio climático.',
+      email: 'ana.pimentel@medioambiente.gob.do',  // [AGREGADO: ejemplo institucional]
+      telefono: '8090000001',                      // [AGREGADO: no disponible públicamente]
+      extension: '201',                            // [AGREGADO: asignado ficticio]
+      experiencia: 20,                             // [AGREGADO: estimado por trayectoria 2007–2025]
+      area_especializacion: 'Sostenibilidad y política pública'
+    },
+    {
+      id: 3,
+      nombre: 'Carlos Augusto Batista',
+      cargo: 'Viceministro de Áreas Protegidas y Biodiversidad',
+      departamento: 'Áreas Protegidas y Biodiversidad',
+      foto: ViceministroAPBImg,
+      bio: 'Ingeniero industrial y ambientalista. Especialista en conservación, biodiversidad y manejo de residuos. Ha participado en iniciativas nacionales sobre áreas protegidas.',
+      email: 'carlos.batista@medioambiente.gob.do',  // [AGREGADO: ejemplo institucional]
+      telefono: '8090000002',                         // [AGREGADO: no disponible públicamente]
+      extension: '202',                               // [AGREGADO: asignado ficticio]
+      experiencia: 18,                                // [AGREGADO: estimado por trayectoria en sector ambiental desde 2005]
+      area_especializacion: 'Biodiversidad y conservación'
+    },
+    {
+      id: 4,
+      nombre: 'Lenin Ramón Bueno Rodríguez',
+      cargo: 'Viceministro de Gestión Ambiental',
+      departamento: 'Gestión Ambiental',
+      foto: ViceministroGAImg,
+      bio: 'Ingeniero civil con maestría en administración de la construcción. Experto en sostenibilidad, gestión de proyectos y supervisión técnica.',
+      email: 'lenin.bueno@medioambiente.gob.do',  // [AGREGADO: ejemplo institucional]
+      telefono: '8090000003',                     // [AGREGADO: no disponible públicicamente]
+      extension: '203',                           // [AGREGADO: asignado ficticio]
+      experiencia: 12,                            // [AGREGADO: estimado por roles 2020–2024 + experiencia previa]
+      area_especializacion: 'Gestión ambiental y construcción sostenible'
+    },
+    {
+      id: 5,
+      nombre: 'José Ramón Reyes López',
+      cargo: 'Viceministro de Recursos Costeros y Marinos',
+      departamento: 'Costeros y Marinos',
+      foto: ViceministroRCMImg,
+      bio: 'Especialista en conservación marina, restauración de manglares y políticas para la protección de ecosistemas costeros. Representa al país en organismos internacionales.',
+      email: 'jose.reyes@medioambiente.gob.do',   // [AGREGADO: ejemplo institucional]
+      telefono: '8090000004',                      // [AGREGADO: no disponible públicamente]
+      extension: '204',                            // [AGREGADO: asignado ficticio]
+      experiencia: 10,                             // [AGREGADO: estimado desde 2020 como viceministro]
+      area_especializacion: 'Conservación marina y recursos costeros'
+    },
+    {
+      id: 6,
+      nombre: 'José Elías González',
+      cargo: 'Viceministro de Recursos Forestales',
+      departamento: 'Recursos Forestales',
+      foto: ViceministroRFImg,
+      bio: 'Especialista forestal con amplia trayectoria en manejo forestal, reforestación, silvicultura e investigaciones agroforestales. Asesor y docente en el sector forestal.',
+      email: 'jose.gonzalez@medioambiente.gob.do',  // [AGREGADO: ejemplo institucional]
+      telefono: '8090000005',                        // [AGREGADO: no disponible públicamente]
+      extension: '205',                              // [AGREGADO: asignado ficticio]
+      experiencia: 30,                               // [AGREGADO: estimado por décadas de trayectoria]
+      area_especializacion: 'Manejo forestal y conservación'
+    }
+  ];
+};
+
+const loadTeamData = async () => {
+  loading.value = true;
+  
+  try {
+    // Intenta cargar desde la API
+    const response = await medioAmbienteAPI.getEquipo();
+    
+    if (response.data && Array.isArray(response.data)) {
+      teamMembers.value = response.data;
+    } else {
+      // Si la API no responde, usa datos de ejemplo
+      console.warn('API no respondió con datos válidos, usando datos de ejemplo');
+      teamMembers.value = getSampleTeamData();
+    }
+  } catch (error) {
+    console.error('Error loading team data from API:', error);
+    // En caso de error, usar datos de ejemplo para desarrollo
+    teamMembers.value = getSampleTeamData();
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadTeamData();
 });
 </script>
 
@@ -212,6 +333,26 @@ onMounted(async () => {
   }
 }
 
+.loading-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #1b5e20;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  p {
+    color: #666;
+    font-size: 1.1rem;
+  }
+}
+
 .department-filters {
   display: flex;
   justify-content: center;
@@ -228,6 +369,7 @@ onMounted(async () => {
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 500;
+    white-space: nowrap;
 
     &:hover {
       background: #e8f5e8;
@@ -253,6 +395,7 @@ onMounted(async () => {
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #e0e0e0;
 
   &:hover {
     transform: translateY(-5px);
@@ -268,11 +411,14 @@ onMounted(async () => {
   position: relative;
   height: 300px;
   overflow: hidden;
+  background: #f0f0f0;
 
   img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
+    background: #f8f9fa;
   }
 
   .member-overlay {
@@ -331,6 +477,7 @@ onMounted(async () => {
     color: #333;
     font-weight: 600;
     margin-bottom: 0.25rem;
+    font-size: 1.1rem;
   }
 
   .department {
@@ -347,6 +494,7 @@ onMounted(async () => {
     color: #666;
     line-height: 1.5;
     margin-bottom: 1.5rem;
+    font-size: 0.95rem;
   }
 
   .member-contact {
@@ -362,7 +510,28 @@ onMounted(async () => {
         width: 16px;
         color: #1b5e20;
       }
+
+      span {
+        word-break: break-all;
+      }
     }
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+
+  i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin-bottom: 1rem;
+    color: #333;
   }
 }
 
@@ -370,7 +539,9 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 2rem;
-  padding: 2rem 0;
+  padding: 3rem 0;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 2rem;
 
   .stat-card {
     background: white;
@@ -378,6 +549,7 @@ onMounted(async () => {
     border-radius: 12px;
     text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
 
     .stat-number {
       font-size: 3rem;
@@ -393,6 +565,11 @@ onMounted(async () => {
   }
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 @media (max-width: 768px) {
   .team-grid {
     grid-template-columns: 1fr;
@@ -400,15 +577,19 @@ onMounted(async () => {
 
   .department-filters {
     gap: 0.5rem;
-  }
-
-  .dept-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
+    
+    .dept-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+    }
   }
 
   .team-stats {
     grid-template-columns: 1fr;
+  }
+
+  .member-photo {
+    height: 250px;
   }
 }
 </style>
