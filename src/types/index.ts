@@ -38,10 +38,14 @@ export interface EnvironmentalReport {
   latitud: number;
   longitud: number;
   fecha: string; 
-  estado: 'pendiente' | 'en_proceso' | 'resuelto' | 'rechazado';
+  estado: string;
   comentario?: string;
   categoria: string;
   urgencia: 'baja' | 'media' | 'alta';
+  fechaResolucion?: string; // ✅ Nuevo: fecha cuando se resuelve
+  resolucionComentario?: string; // ✅ Nuevo: comentario del admin
+  usuarioId?: string; // ✅ Nuevo: ID del usuario que reportó
+  usuarioNombre?: string; // ✅ Nuevo: nombre del usuario que reportó
 }
 
 export interface News {
