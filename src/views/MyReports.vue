@@ -11,7 +11,7 @@
         <select v-model="selectedStatus" class="status-filter">
           <option value="">Todos los estados</option>
           <option value="pendiente">Pendientes</option>
-          <option value="en-progreso">En Progreso</option>
+          <option value="en_proceso">En Proceso</option>
           <option value="resuelto">Resueltos</option>
           <option value="rechazado">Rechazados</option>
         </select>
@@ -25,7 +25,7 @@
           class="report-card"
           @click="viewReportDetails(report)"
         >
-          <div class="report-status" :class="report.estado.replace('-', '_')">
+          <div class="report-status" :class="report.estado">
             <i :class="getStatusIcon(report.estado)"></i>
             <span>{{ getStatusText(report.estado) }}</span>
           </div>
@@ -87,7 +87,7 @@ const filteredReports = computed(() => {
 const getStatusIcon = (status: string) => {
   const icons = {
     pendiente: 'fas fa-clock',
-    'en-progreso': 'fas fa-cog',
+    en_proceso: 'fas fa-cog',
     resuelto: 'fas fa-check-circle',
     rechazado: 'fas fa-times-circle'
   };
@@ -97,7 +97,7 @@ const getStatusIcon = (status: string) => {
 const getStatusText = (status: string) => {
   const texts = {
     pendiente: 'Pendiente',
-    'en-progreso': 'En Progreso',
+    en_proceso: 'En Proceso',
     resuelto: 'Resuelto',
     rechazado: 'Rechazado'
   };
@@ -230,7 +230,7 @@ const viewReportDetails = (report: EnvironmentalReport) => {
     }
   }
 
-  &.en_progreso {
+  &.en_proceso {
     background: #e3f2fd;
     color: #2196f3;
 
