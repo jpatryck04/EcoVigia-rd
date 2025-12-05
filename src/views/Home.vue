@@ -57,9 +57,8 @@
         
         <div class="features-grid">
           <div v-for="feature in features" :key="feature.id" 
-               class="feature-card" @click="navigateTo(feature.route)"
-               v-animate-on-scroll>
-            <div class="feature-icon">
+               class="feature-card" @click="navigateTo(feature.route)">
+                <div class="feature-icon">
               <i :class="feature.icon"></i>
             </div>
             <h3>{{ feature.title }}</h3>
@@ -745,6 +744,34 @@ onUnmounted(() => {
   
   .news-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+.feature-card {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease;
+  
+  &.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Si quieres animación automática al hacer scroll */
+.feature-card {
+  animation: fadeInUp 0.6s ease forwards;
+  animation-delay: calc(var(--index, 0) * 0.1s);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

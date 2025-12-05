@@ -176,7 +176,7 @@ const selectedType = ref('');
 const selectedArea = ref<ProtectedArea | null>(null);
 const hoverCard = ref<number | null>(null);
 const currentSlide = ref(0);
-const autoPlayInterval = ref<NodeJS.Timeout | null>(null);
+const autoPlayInterval = ref<number | null>(null);
 const areasSection = ref<HTMLElement | null>(null);
 const highlightedArea = ref<number | null>(null);
 
