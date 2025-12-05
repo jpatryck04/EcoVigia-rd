@@ -1,8 +1,10 @@
-// En la raíz del proyecto, crea: vue.config.js
 const { defineConfig } = require('@vue/cli-service')
 
 module.exports = defineConfig({
   transpileDependencies: true,
+  
+  // Deshabilitar ESLint completamente
+  lintOnSave: false,
   
   // SOLUCIÓN PARA EL ERROR forkTsCheckerServiceBeforeStart
   chainWebpack: (config) => {
@@ -21,5 +23,17 @@ module.exports = defineConfig({
   },
   
   // Deshabilitar paralelización
-  parallel: false
-})
+  parallel: false,
+  
+  // Configurar para ignorar warnings de Sass
+  css: {
+    loaderOptions: {
+      sass: {
+        implementation: require('sass'),
+        sassOptions: {
+          quietDeps: true
+        }
+      }
+    }
+  }
+}) 

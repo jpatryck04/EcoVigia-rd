@@ -108,9 +108,9 @@ const selectedVideo = ref<Video | null>(null);
 
 // Función para extraer el ID de YouTube de la URL
 const getYouTubeId = (url: string) => {
-  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+const regex = /https?:\/\/(www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/;
   const match = url.match(regex);
-  return match ? match[1] : null;
+  return match ? match[2] : null;
 };
 
 // Función para formatear fecha
