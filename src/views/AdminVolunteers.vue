@@ -1,6 +1,7 @@
 <template>
   <div class="admin-volunteers">
     <div class="container">
+      <!-- Header -->
       <div class="page-header">
         <div class="header-content">
           <h1>Gestión de Voluntarios</h1>
@@ -12,41 +13,654 @@
         </button>
       </div>
 
-      <div class="content">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-number">45</div>
+      <!-- Estadísticas en tiempo real -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ stats.total }}</div>
             <div class="stat-label">Voluntarios Totales</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-number">32</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ stats.active }}</div>
             <div class="stat-label">Voluntarios Activos</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-number">13</div>
-            <div class="stat-label">Voluntarios Nuevos</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-user-plus"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ stats.pending }}</div>
+            <div class="stat-label">Pendientes de Aprobación</div>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ stats.thisMonth }}</div>
+            <div class="stat-label">Registros este Mes</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros y Búsqueda -->
+      <div class="filters-section">
+        <div class="filters-row">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input 
+              v-model="filters.search"
+              type="text" 
+              placeholder="Buscar voluntarios por nombre, cédula o correo..." 
+              @input="applyFilters"
+            >
+          </div>
+
+          <div class="filter-group">
+            <select v-model="filters.estado" @change="applyFilters">
+              <option value="">Todos los estados</option>
+              <option value="activo">Activo</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="inactivo">Inactivo</option>
+              <option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <select v-model="filters.orden" @change="applyFilters">
+              <option value="fecha_desc">Más recientes primero</option>
+              <option value="fecha_asc">Más antiguos primero</option>
+              <option value="nombre_asc">Nombre A-Z</option>
+              <option value="nombre_desc">Nombre Z-A</option>
+            </select>
           </div>
         </div>
 
-        <div class="info-message">
-          <i class="fas fa-info-circle"></i>
-          <p>Panel de gestión de voluntarios - En desarrollo</p>
+        <div class="date-filters">
+          <div class="date-input">
+            <label>Desde:</label>
+            <input type="date" v-model="filters.fechaDesde" @change="applyFilters">
+          </div>
+          <div class="date-input">
+            <label>Hasta:</label>
+            <input type="date" v-model="filters.fechaHasta" @change="applyFilters">
+          </div>
+          <button class="btn-clear" @click="clearFilters">
+            <i class="fas fa-times"></i>
+            Limpiar Filtros
+          </button>
         </div>
       </div>
+
+      <!-- Exportar Datos -->
+      <div class="export-section">
+        <button class="btn-export" @click="exportToExcel">
+          <i class="fas fa-file-excel"></i>
+          Exportar a Excel
+        </button>
+        <button class="btn-export" @click="exportToPDF">
+          <i class="fas fa-file-pdf"></i>
+          Exportar a PDF
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando voluntarios...</p>
+      </div>
+
+      <!-- Tabla de Voluntarios -->
+      <div v-else class="volunteers-table">
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th @click="sortBy('nombre')" class="sortable">
+                  Nombre
+                  <i class="fas fa-sort"></i>
+                </th>
+                <th>Cédula</th>
+                <th>Correo</th>
+                <th>Teléfono</th>
+                <th @click="sortBy('fecha_registro')" class="sortable">
+                  Fecha Registro
+                  <i class="fas fa-sort"></i>
+                </th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(volunteer, index) in paginatedVolunteers" :key="volunteer.id">
+                <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+                <td>
+                  <div class="user-info">
+                    <div class="user-avatar">
+                      {{ getInitials(volunteer.nombre) }}
+                    </div>
+                    <div class="user-details">
+                      <strong>{{ volunteer.nombre }}</strong>
+                      <span class="user-email">{{ volunteer.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ formatCedula(volunteer.cedula) }}</td>
+                <td>{{ volunteer.email }}</td>
+                <td>{{ volunteer.telefono }}</td>
+                <td>{{ formatDate(volunteer.fecha_registro) }}</td>
+                <td>
+                  <span class="status-badge" :class="volunteer.estado">
+                    {{ getStatusText(volunteer.estado) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button 
+                      class="btn-action view" 
+                      @click="viewVolunteer(volunteer)"
+                      title="Ver detalles"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    
+                    <button 
+                      v-if="volunteer.estado === 'pendiente'"
+                      class="btn-action approve" 
+                      @click="approveVolunteer(volunteer)"
+                      title="Aprobar voluntario"
+                    >
+                      <i class="fas fa-check"></i>
+                    </button>
+                    
+                    <button 
+                      v-if="volunteer.estado === 'pendiente'"
+                      class="btn-action reject" 
+                      @click="rejectVolunteer(volunteer)"
+                      title="Rechazar solicitud"
+                    >
+                      <i class="fas fa-times"></i>
+                    </button>
+                    
+                    <button 
+                      v-if="volunteer.estado === 'activo'"
+                      class="btn-action deactivate" 
+                      @click="deactivateVolunteer(volunteer)"
+                      title="Desactivar voluntario"
+                    >
+                      <i class="fas fa-user-slash"></i>
+                    </button>
+                    
+                    <button 
+                      v-if="volunteer.estado === 'inactivo'"
+                      class="btn-action activate" 
+                      @click="activateVolunteer(volunteer)"
+                      title="Reactivar voluntario"
+                    >
+                      <i class="fas fa-user-check"></i>
+                    </button>
+                    
+                    <button 
+                      class="btn-action delete" 
+                      @click="deleteVolunteer(volunteer)"
+                      title="Eliminar voluntario"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="pagination" v-if="totalPages > 1">
+          <button 
+            class="pagination-btn" 
+            :disabled="currentPage === 1"
+            @click="changePage(currentPage - 1)"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          
+          <button 
+            v-for="page in visiblePages" 
+            :key="page"
+            class="pagination-btn" 
+            :class="{ active: page === currentPage }"
+            @click="changePage(page)"
+          >
+            {{ page }}
+          </button>
+          
+          <button 
+            class="pagination-btn" 
+            :disabled="currentPage === totalPages"
+            @click="changePage(currentPage + 1)"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-if="!loading && filteredVolunteers.length === 0" class="empty-state">
+        <i class="fas fa-users-slash"></i>
+        <h3>No se encontraron voluntarios</h3>
+        <p v-if="hasActiveFilters">Intenta ajustar los filtros de búsqueda</p>
+        <p v-else>No hay voluntarios registrados aún</p>
+      </div>
+
+      <!-- Modal de Detalles -->
+      <VolunteerDetailModal 
+            v-if="selectedVolunteer"
+            :volunteer="selectedVolunteer"
+            @close="selectedVolunteer = null"
+            @update="handleVolunteerUpdate"
+            @action="handleVolunteerAction"
+        />
+
+      <!-- Modal de Confirmación -->
+      <ConfirmationModal 
+        v-if="showConfirmationModal"
+        :title="confirmationData.title"
+        :message="confirmationData.message"
+        :confirmText="confirmationData.confirmText"
+        :cancelText="confirmationData.cancelText"
+        :type="confirmationData.type"
+        @confirm="executeAction"
+        @cancel="cancelAction"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { formatDate, truncateText } from '@/utils';
+import VolunteerDetailModal from '@/components/admin/VolunteerDetailModal.vue';
+import ConfirmationModal from '@/components/common/ConfirmationModal.vue';
+import type { Volunteer } from '@/types';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-if (!authStore.isAdmin()) {
-  router.push('/');
-}
+// Estado
+const loading = ref(true);
+const volunteers = ref<Volunteer[]>([]);
+const selectedVolunteer = ref<Volunteer | null>(null);
+const showConfirmationModal = ref(false);
+const confirmationData = ref({
+  title: '',
+  message: '',
+  confirmText: '',
+  cancelText: 'Cancelar',
+  type: 'info' as 'info' | 'warning' | 'danger',
+  action: '' as 'approve' | 'reject' | 'activate' | 'deactivate' | 'delete',
+  volunteerId: ''
+});
+
+// Filtros
+const filters = ref({
+  search: '',
+  estado: '',
+  orden: 'fecha_desc',
+  fechaDesde: '',
+  fechaHasta: ''
+});
+
+// Paginación
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+// Estadísticas
+const stats = computed(() => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  
+  return {
+    total: volunteers.value.length,
+    active: volunteers.value.filter(v => v.estado === 'activo').length,
+    pending: volunteers.value.filter(v => v.estado === 'pendiente').length,
+    thisMonth: volunteers.value.filter(v => 
+      new Date(v.fecha_registro) >= startOfMonth
+    ).length
+  };
+});
+
+// Voluntarios filtrados
+const filteredVolunteers = computed(() => {
+  let filtered = [...volunteers.value];
+
+  // Búsqueda
+  if (filters.value.search) {
+    const search = filters.value.search.toLowerCase();
+    filtered = filtered.filter(v =>
+      v.nombre.toLowerCase().includes(search) ||
+      v.cedula.includes(search) ||
+      v.email.toLowerCase().includes(search) ||
+      v.telefono.includes(search)
+    );
+  }
+
+  // Filtro por estado
+  if (filters.value.estado) {
+    filtered = filtered.filter(v => v.estado === filters.value.estado);
+  }
+
+  // Filtro por fecha
+  if (filters.value.fechaDesde) {
+    const desde = new Date(filters.value.fechaDesde);
+    filtered = filtered.filter(v => new Date(v.fecha_registro) >= desde);
+  }
+
+  if (filters.value.fechaHasta) {
+    const hasta = new Date(filters.value.fechaHasta);
+    hasta.setHours(23, 59, 59, 999); // Fin del día
+    filtered = filtered.filter(v => new Date(v.fecha_registro) <= hasta);
+  }
+
+  // Ordenamiento
+  filtered.sort((a, b) => {
+    switch (filters.value.orden) {
+      case 'nombre_asc':
+        return a.nombre.localeCompare(b.nombre);
+      case 'nombre_desc':
+        return b.nombre.localeCompare(a.nombre);
+      case 'fecha_asc':
+        return new Date(a.fecha_registro).getTime() - new Date(b.fecha_registro).getTime();
+      case 'fecha_desc':
+        return new Date(b.fecha_registro).getTime() - new Date(a.fecha_registro).getTime();
+      default:
+        return 0;
+    }
+  });
+
+  return filtered;
+});
+
+// Paginación
+const totalPages = computed(() => 
+  Math.ceil(filteredVolunteers.value.length / itemsPerPage)
+);
+
+const paginatedVolunteers = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredVolunteers.value.slice(start, end);
+});
+
+const visiblePages = computed(() => {
+  const pages = [];
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2));
+  let end = Math.min(totalPages.value, start + maxVisible - 1);
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  
+  return pages;
+});
+
+const hasActiveFilters = computed(() => {
+  return Object.values(filters.value).some(value => value !== '');
+});
+
+// Métodos
+const applyFilters = () => {
+  currentPage.value = 1; // Resetear a primera página
+};
+
+const clearFilters = () => {
+  filters.value = {
+    search: '',
+    estado: '',
+    orden: 'fecha_desc',
+    fechaDesde: '',
+    fechaHasta: ''
+  };
+  currentPage.value = 1;
+};
+
+const sortBy = (field: string) => {
+  // Implementar lógica de ordenamiento
+};
+
+const getInitials = (nombre: string) => {
+  return nombre
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};
+
+const formatCedula = (cedula: string) => {
+  if (!cedula) return '';
+  if (cedula.length === 11) {
+    return cedula.replace(/(\d{3})(\d{7})(\d{1})/, '$1-$2-$3');
+  }
+  return cedula;
+};
+
+const getStatusText = (estado: string) => {
+  const statusMap: Record<string, string> = {
+    'activo': 'Activo',
+    'pendiente': 'Pendiente',
+    'inactivo': 'Inactivo',
+    'rechazado': 'Rechazado'
+  };
+  return statusMap[estado] || estado;
+};
+
+const loadVolunteers = async () => {
+  try {
+    loading.value = true;
+    
+    // Simular carga de API
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Datos de ejemplo - ESTOS SE LLENARÁN AUTOMÁTICAMENTE
+    // cuando los usuarios se registren en /voluntariado
+    volunteers.value = [
+      // Los voluntarios se agregarán automáticamente aquí
+      // cuando usen el formulario de registro
+    ];
+    
+    // Intentar cargar del localStorage primero (para desarrollo)
+    const savedVolunteers = localStorage.getItem('eco_vigia_volunteers');
+    if (savedVolunteers) {
+      volunteers.value = JSON.parse(savedVolunteers);
+    }
+    
+  } catch (error) {
+    console.error('Error loading volunteers:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Acciones sobre voluntarios
+const viewVolunteer = (volunteer: Volunteer) => {
+  selectedVolunteer.value = volunteer;
+};
+
+const handleVolunteerAction = (actionType: string) => {
+  if (!selectedVolunteer.value) return;
+  
+  switch (actionType) {
+    case 'approve':
+      approveVolunteer(selectedVolunteer.value);
+      break;
+    case 'reject':
+      rejectVolunteer(selectedVolunteer.value);
+      break;
+    case 'activate':
+      activateVolunteer(selectedVolunteer.value);
+      break;
+    case 'deactivate':
+      deactivateVolunteer(selectedVolunteer.value);
+      break;
+  }
+  
+  selectedVolunteer.value = null;
+};
+
+const showConfirmation = (
+  volunteer: Volunteer,
+  action: typeof confirmationData.value.action,
+  title: string,
+  message: string,
+  type: typeof confirmationData.value.type = 'warning'
+) => {
+  confirmationData.value = {
+    title,
+    message,
+    confirmText: action === 'delete' ? 'Eliminar' : 'Confirmar',
+    cancelText: 'Cancelar',
+    type,
+    action,
+    volunteerId: volunteer.id
+  };
+  showConfirmationModal.value = true;
+};
+
+const approveVolunteer = (volunteer: Volunteer) => {
+  showConfirmation(
+    volunteer,
+    'approve',
+    'Aprobar Voluntario',
+    `¿Estás seguro de aprobar a ${volunteer.nombre} como voluntario?`,
+    'info'
+  );
+};
+
+const rejectVolunteer = (volunteer: Volunteer) => {
+  showConfirmation(
+    volunteer,
+    'reject',
+    'Rechazar Voluntario',
+    `¿Estás seguro de rechazar la solicitud de ${volunteer.nombre}?`,
+    'warning'
+  );
+};
+
+const activateVolunteer = (volunteer: Volunteer) => {
+  showConfirmation(
+    volunteer,
+    'activate',
+    'Activar Voluntario',
+    `¿Activar a ${volunteer.nombre} como voluntario?`,
+    'info'
+  );
+};
+
+const deactivateVolunteer = (volunteer: Volunteer) => {
+  showConfirmation(
+    volunteer,
+    'deactivate',
+    'Desactivar Voluntario',
+    `¿Desactivar a ${volunteer.nombre} como voluntario?`,
+    'warning'
+  );
+};
+
+const deleteVolunteer = (volunteer: Volunteer) => {
+  showConfirmation(
+    volunteer,
+    'delete',
+    'Eliminar Voluntario',
+    `¿Eliminar permanentemente a ${volunteer.nombre}? Esta acción no se puede deshacer.`,
+    'danger'
+  );
+};
+
+const executeAction = () => {
+  const { action, volunteerId } = confirmationData.value;
+  const volunteer = volunteers.value.find(v => v.id === volunteerId);
+  
+  if (!volunteer) return;
+  
+  switch (action) {
+    case 'approve':
+      volunteer.estado = 'activo';
+      volunteer.fecha_aprobacion = new Date().toISOString();
+      break;
+    case 'reject':
+      volunteer.estado = 'rechazado';
+      break;
+    case 'activate':
+      volunteer.estado = 'activo';
+      break;
+    case 'deactivate':
+      volunteer.estado = 'inactivo';
+      break;
+    case 'delete':
+      volunteers.value = volunteers.value.filter(v => v.id !== volunteerId);
+      break;
+  }
+  
+  // Guardar en localStorage (en desarrollo)
+  localStorage.setItem('eco_vigia_volunteers', JSON.stringify(volunteers.value));
+  
+  showConfirmationModal.value = false;
+};
+
+const cancelAction = () => {
+  showConfirmationModal.value = false;
+};
+
+const handleVolunteerUpdate = (updatedVolunteer: Volunteer) => {
+  const index = volunteers.value.findIndex(v => v.id === updatedVolunteer.id);
+  if (index !== -1) {
+    volunteers.value[index] = updatedVolunteer;
+    localStorage.setItem('eco_vigia_volunteers', JSON.stringify(volunteers.value));
+  }
+};
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+};
+
+const exportToExcel = () => {
+  alert('Función de exportación a Excel en desarrollo');
+};
+
+const exportToPDF = () => {
+  alert('Función de exportación a PDF en desarrollo');
+};
+
+onMounted(() => {
+  if (!authStore.isAdmin()) {
+    router.push('/');
+    return;
+  }
+  loadVolunteers();
+});
 </script>
 
 <style scoped lang="scss">
@@ -67,13 +681,17 @@ if (!authStore.isAdmin()) {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.header-content h1 {
-  color: #1b5e20;
-  margin-bottom: 0.5rem;
-}
-
-.header-content p {
-  color: #666;
+.header-content {
+  h1 {
+    color: #1b5e20;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+  }
+  
+  p {
+    color: #666;
+    font-size: 1.1rem;
+  }
 }
 
 .btn-back {
@@ -82,12 +700,13 @@ if (!authStore.isAdmin()) {
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   transition: background 0.3s ease;
-
+  
   &:hover {
     background: #5a6268;
   }
@@ -95,46 +714,473 @@ if (!authStore.isAdmin()) {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
 .stat-card {
   background: white;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 12px;
-  text-align: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
-.stat-number {
-  font-size: 2.5rem;
-  font-weight: bold;
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #e8f5e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
   color: #1b5e20;
-  margin-bottom: 0.5rem;
 }
 
-.stat-label {
-  color: #666;
-}
-
-.info-message {
-  background: #e3f2fd;
-  border: 1px solid #bbdefb;
-  border-radius: 8px;
-  padding: 2rem;
-  text-align: center;
-  color: #1976d2;
-
-  i {
+.stat-content {
+  .stat-number {
     font-size: 2rem;
-    margin-bottom: 1rem;
+    font-weight: 700;
+    color: #333;
+    line-height: 1;
   }
+  
+  .stat-label {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+}
 
+.filters-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.filters-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.search-box {
+  position: relative;
+  
+  i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+  }
+  
+  input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    
+    &:focus {
+      outline: none;
+      border-color: #1b5e20;
+    }
+  }
+}
+
+.filter-group {
+  select {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    background: white;
+    font-size: 1rem;
+    cursor: pointer;
+    min-width: 180px;
+    
+    &:focus {
+      outline: none;
+      border-color: #1b5e20;
+    }
+  }
+}
+
+.date-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  label {
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  input {
+    padding: 0.5rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    
+    &:focus {
+      outline: none;
+      border-color: #1b5e20;
+    }
+  }
+}
+
+.btn-clear {
+  background: #f8f9fa;
+  color: #666;
+  border: 2px solid #e0e0e0;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  margin-left: auto;
+  
+  &:hover {
+    background: #e0e0e0;
+    color: #333;
+  }
+}
+
+.export-section {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn-export {
+  background: white;
+  color: #666;
+  border: 2px solid #e0e0e0;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #f8f9fa;
+    border-color: #1b5e20;
+    color: #1b5e20;
+  }
+}
+
+.loading-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #1b5e20;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  
   p {
-    margin: 0;
-    font-size: 1.1rem;
+    color: #666;
+  }
+}
+
+.volunteers-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  
+  thead {
+    background: #1b5e20;
+    
+    th {
+      color: white;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+      
+      &.sortable {
+        cursor: pointer;
+        user-select: none;
+        
+        &:hover {
+          background: #144017;
+        }
+      }
+    }
+  }
+  
+  tbody {
+    tr {
+      border-bottom: 1px solid #e0e0e0;
+      
+      &:hover {
+        background: #f8f9fa;
+      }
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      td {
+        padding: 1rem;
+        color: #333;
+      }
+    }
+  }
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1b5e20, #4caf50);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-details {
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  
+  .user-email {
+    font-size: 0.8rem;
+    color: #666;
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  
+  &.activo {
+    background: #e8f5e8;
+    color: #4caf50;
+  }
+  
+  &.pendiente {
+    background: #fff3e0;
+    color: #ff9800;
+  }
+  
+  &.inactivo {
+    background: #f5f5f5;
+    color: #666;
+  }
+  
+  &.rechazado {
+    background: #ffebee;
+    color: #f44336;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  
+  .btn-action {
+    width: 35px;
+    height: 35px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    
+    &.view {
+      background: #e3f2fd;
+      color: #1976d2;
+      
+      &:hover {
+        background: #1976d2;
+        color: white;
+      }
+    }
+    
+    &.approve {
+      background: #e8f5e8;
+      color: #4caf50;
+      
+      &:hover {
+        background: #4caf50;
+        color: white;
+      }
+    }
+    
+    &.reject {
+      background: #ffebee;
+      color: #f44336;
+      
+      &:hover {
+        background: #f44336;
+        color: white;
+      }
+    }
+    
+    &.activate {
+      background: #e8f5e8;
+      color: #4caf50;
+      
+      &:hover {
+        background: #4caf50;
+        color: white;
+      }
+    }
+    
+    &.deactivate {
+      background: #fff3e0;
+      color: #ff9800;
+      
+      &:hover {
+        background: #ff9800;
+        color: white;
+      }
+    }
+    
+    &.delete {
+      background: #f5f5f5;
+      color: #666;
+      
+      &:hover {
+        background: #f44336;
+        color: white;
+      }
+    }
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.pagination-btn {
+  min-width: 40px;
+  height: 40px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  
+  &:hover:not(:disabled) {
+    border-color: #1b5e20;
+    color: #1b5e20;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  &.active {
+    background: #1b5e20;
+    color: white;
+    border-color: #1b5e20;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+  
+  i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+  
+  h3 {
+    margin-bottom: 0.5rem;
+    color: #333;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .filters-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .date-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn-clear {
+    margin-left: 0;
+  }
+  
+  .action-buttons {
+    flex-wrap: wrap;
   }
 }
 </style>

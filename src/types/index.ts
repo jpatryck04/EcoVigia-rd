@@ -100,3 +100,19 @@ export interface Regulation {
   numero: string;
   archivo?: string;
 }
+
+export interface Volunteer {
+  id: string;
+  cedula: string;
+  nombre: string;
+  email: string;
+  password?: string;
+  telefono: string;
+  fecha_registro: string;
+  fecha_aprobacion?: string;
+  estado: 'activo' | 'pendiente' | 'inactivo' | 'rechazado';
+  ultima_actividad?: string;
+  actividades_completadas?: number;
+  horas_voluntariado?: number;
+  notas?: string;
+}

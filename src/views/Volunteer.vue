@@ -89,13 +89,10 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { medioAmbienteAPI } from '@/services/api';
-import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
-const authStore = useAuthStore();
 
 const loading = ref(false);
-const useRealAPI = ref(true);
 
 const form = ref({
   cedula: '',
@@ -109,37 +106,56 @@ const submitApplication = async () => {
   loading.value = true;
   
   try {
-    // Verificar si el email ya está registrado
-    if (authStore.isEmailRegistered(form.value.email)) {
-      alert('❌ Este correo electrónico ya está registrado. Si ya eres voluntario, inicia sesión en la sección correspondiente.');
+    // Verificar si el voluntario ya está registrado
+    const existingVolunteers = JSON.parse(localStorage.getItem('eco_vigia_volunteers') || '[]');
+    
+    // Verificar por cédula o email
+    const isDuplicate = existingVolunteers.some((volunteer: any) => 
+      volunteer.cedula === form.value.cedula || volunteer.email === form.value.email
+    );
+    
+    if (isDuplicate) {
+      alert('⚠️ Ya existe una solicitud con esta cédula o correo electrónico.');
       loading.value = false;
       return;
     }
 
-    // Generar ID único y preparar datos
-    const volunteerData = {
-      id: Date.now(),
-      ...form.value,
-      fecha: new Date().toISOString(),
-      status: 'pending'
+    // Crear nuevo voluntario con estructura completa
+    const newVolunteer = {
+      id: Date.now().toString(),
+      cedula: form.value.cedula,
+      nombre: form.value.nombre,
+      email: form.value.email,
+      telefono: form.value.telefono,
+      password: form.value.password, // Se guarda para posible autenticación futura
+      fecha_registro: new Date().toISOString(),
+      estado: 'pendiente',
+      actividades_completadas: 0,
+      horas_voluntariado: 0,
+      role: 'voluntario'
     };
-
-    // Intentar con API real si está habilitada
-    if (useRealAPI.value) {
-      try {
-        await medioAmbienteAPI.solicitarVoluntariado(form.value);
-        console.log('✅ Solicitud enviada al Ministerio');
-      } catch (apiError) {
-        console.warn('⚠️ API no disponible, usando almacenamiento local');
-      }
-    }
-
-    // Guardar en localStorage como respaldo
+    
+    // Guardar en localStorage
+    existingVolunteers.push(newVolunteer);
+    localStorage.setItem('eco_vigia_volunteers', JSON.stringify(existingVolunteers));
+    
+    // También guardar en un registro separado para solicitudes
     const existingApplications = JSON.parse(localStorage.getItem('eco_vigia_volunteer_applications') || '[]');
-    existingApplications.push(volunteerData);
+    existingApplications.push({
+      ...newVolunteer,
+      fecha_solicitud: new Date().toISOString()
+    });
     localStorage.setItem('eco_vigia_volunteer_applications', JSON.stringify(existingApplications));
-
-    alert('✅ ¡Solicitud enviada exitosamente! Un administrador revisará tu solicitud y te notificará cuando sea aprobada.');
+    
+    try {
+      // Intentar enviar a la API
+      await medioAmbienteAPI.solicitarVoluntariado(form.value);
+      console.log('✅ Solicitud enviada al Ministerio');
+    } catch (apiError) {
+      console.warn('⚠️ API no disponible, solo se guardó localmente');
+    }
+    
+    alert('✅ ¡Solicitud enviada exitosamente! Te contactaremos pronto.');
     
     // Limpiar formulario
     form.value = {
