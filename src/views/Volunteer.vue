@@ -140,6 +140,12 @@
             <i v-if="loading" class="fas fa-spinner fa-spin"></i>
             {{ loading ? 'Enviando...' : 'Enviar Solicitud' }}
           </button>
+
+          <!-- Botón temporal para debug -->
+          <button type="button" @click="debugStorage" class="debug-btn">
+            <i class="fas fa-bug"></i>
+            Verificar Almacenamiento
+          </button>
         </form>
       </div>
     </div>
@@ -147,30 +153,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { volunteerValidator } from '@/utils/validators';
-import { onMounted } from 'vue';
-
-onMounted(() => {
-  console.log('Volunteer page mounted');
-  debugStorage();
-});
-
-const debugStorage = () => {
-  console.log('=== DEBUG LOCALSTORAGE ===');
-  const volunteers = localStorage.getItem('eco_vigia_volunteer_applications');
-  console.log('Volunteers in storage:', volunteers ? JSON.parse(volunteers) : 'Empty');
-  
-  // Verificar si el store está funcionando
-  console.log('Auth store methods:', {
-    isEmailRegistered: authStore.isEmailRegistered('test@test.com'),
-    getAllVolunteers: authStore.getAllVolunteers?.() || 'Method not found'
-  });
-};
-
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -197,6 +184,46 @@ const errors = reactive({
   telefono: ''
 });
 
+// Debug function
+const debugStorage = () => {
+  console.log('=== DEBUG LOCALSTORAGE ===');
+  
+  // Verificar diferentes claves que podrían estar usando
+  const keys = [
+    'eco_vigia_volunteer_applications',
+    'eco_vigia_volunteers',
+    'voluntarios',
+    'volunteer_applications'
+  ];
+  
+  keys.forEach(key => {
+    const data = localStorage.getItem(key);
+    console.log(`Key: ${key}`, data ? JSON.parse(data) : 'Empty');
+  });
+  
+  // Verificar store
+  console.log('Auth store methods available:', {
+    registerVolunteer: typeof authStore.registerVolunteer,
+    getAllVolunteers: typeof authStore.getAllVolunteers,
+    isEmailRegistered: typeof authStore.isEmailRegistered
+  });
+  
+  // Mostrar notificación
+  appStore.addNotification({
+    message: 'Datos de almacenamiento verificados en consola',
+    type: 'info'
+  });
+};
+
+onMounted(() => {
+  console.log('Volunteer page mounted');
+  // Inicializar localStorage si no existe
+  if (!localStorage.getItem('eco_vigia_volunteer_applications')) {
+    localStorage.setItem('eco_vigia_volunteer_applications', JSON.stringify([]));
+    console.log('LocalStorage inicializado para voluntarios');
+  }
+});
+
 const validateForm = (): boolean => {
   // Reset errors
   Object.keys(errors).forEach(key => {
@@ -207,6 +234,10 @@ const validateForm = (): boolean => {
   // Validar términos
   if (!form.acceptTerms) {
     termsError.value = true;
+    appStore.addNotification({
+      message: 'Debes aceptar los términos y condiciones',
+      type: 'error'
+    });
     return false;
   }
 
@@ -239,78 +270,118 @@ const togglePassword = () => {
 };
 
 const showTerms = () => {
-  alert('Términos y Condiciones del Voluntariado\n\n' +
-        '1. El voluntario se compromete a respetar las normas del Ministerio de Medio Ambiente.\n' +
-        '2. La información proporcionada debe ser verídica y actualizada.\n' +
-        '3. El voluntario debe mantener conducta apropiada durante las actividades.\n' +
-        '4. El Ministerio se reserva el derecho de aprobar o rechazar solicitudes.\n' +
-        '5. Los voluntarios aprobados recibirán capacitación y supervisión.');
+  const termsText = `
+  TÉRMINOS Y CONDICIONES DEL VOLUNTARIADO
+
+  1. COMPROMISO
+  El voluntario se compromete a respetar las normas, políticas y procedimientos establecidos por el Ministerio de Medio Ambiente y Recursos Naturales.
+
+  2. RESPONSABILIDADES
+  - Asistir puntualmente a las actividades programadas
+  - Seguir las instrucciones del personal asignado
+  - Reportar cualquier incidente o situación irregular
+  - Mantener conducta ética y profesional
+
+  3. CONFIDENCIALIDAD
+  El voluntario deberá mantener confidencialidad sobre la información interna del Ministerio a la que tenga acceso.
+
+  4. SEGURIDAD
+  El voluntario debe cumplir con todas las normas de seguridad y protección ambiental durante las actividades.
+
+  5. DERECHOS
+  - Recibir capacitación adecuada
+  - Contar con equipo de protección necesario
+  - Ser tratado con respeto y dignidad
+  - Recibir certificado de participación
+
+  6. APROBACIÓN
+  El Ministerio se reserva el derecho de aprobar o rechazar solicitudes según criterios establecidos.
+
+  7. BAJA
+  El voluntario puede darse de baja notificando con 7 días de anticipación.
+
+  Al marcar esta casilla, aceptas cumplir con estos términos y condiciones.
+  `;
+  
+  alert(termsText);
 };
 
-// Modifica submitApplication para más logging
 const submitApplication = async () => {
-  console.log('=== SUBMIT START ===');
-  console.log('Form data:', form);
+  console.log('=== INICIANDO ENVÍO DE SOLICITUD ===');
+  console.log('Datos del formulario:', { ...form, password: '***' });
   
+  // Validar formulario
   if (!validateForm()) {
-    console.log('Form validation failed');
+    console.log('Validación fallida');
     return;
   }
 
   loading.value = true;
 
   try {
-    console.log('Calling registerVolunteer...');
+    console.log('Llamando a registerVolunteer...');
+    
+    // Preparar datos para enviar
+    const volunteerData = {
+      cedula: form.cedula.trim(),
+      nombre: form.nombre.trim(),
+      email: form.email.trim().toLowerCase(),
+      password: form.password,
+      telefono: form.telefono.trim()
+    };
+    
+    console.log('Datos enviados al store:', { ...volunteerData, password: '***' });
     
     // Llamar al store
-    const result = authStore.registerVolunteer(form);
-    console.log('Register result:', result);
+    const result = authStore.registerVolunteer(volunteerData);
+    console.log('Resultado del store:', result);
     
     if (result.success) {
-      console.log('Registration successful');
+      console.log('✅ Registro exitoso');
       
-      // Verificar si se guardó
+      // Verificar que se guardó correctamente
       debugStorage();
       
       // Limpiar formulario
-      Object.keys(form).forEach(key => {
-        if (key !== 'acceptTerms') {
-          (form as any)[key] = '';
-        }
+      Object.assign(form, {
+        cedula: '',
+        nombre: '',
+        email: '',
+        password: '',
+        telefono: '',
+        acceptTerms: false
       });
-      form.acceptTerms = false;
       
-      // Mostrar notificación
+      // Mostrar notificación de éxito
       appStore.addNotification({
-        message: result.message + '. Un administrador revisará tu solicitud pronto.',
+        message: '✅ ' + result.message + '. Un administrador revisará tu solicitud pronto.',
         type: 'success'
       });
       
-      // Redirigir después de 2 segundos
+      // Redirigir después de 3 segundos
       setTimeout(() => {
         router.push('/login');
-      }, 2000);
+      }, 3000);
       
     } else {
-      console.log('Registration failed:', result.message);
+      console.log('❌ Registro fallido:', result.message);
       appStore.addNotification({
-        message: result.message,
+        message: '❌ ' + result.message,
         type: 'error'
       });
     }
     
-  } catch (error) {
-    console.error('Error in submitApplication:', error);
+  } catch (error: any) {
+    console.error('Error en submitApplication:', error);
     appStore.addNotification({
-      message: 'Error al procesar la solicitud. Por favor intenta nuevamente.',
+      message: '❌ Error al procesar la solicitud: ' + (error.message || 'Error desconocido'),
       type: 'error'
     });
   } finally {
     loading.value = false;
-    console.log('=== SUBMIT END ===');
+    console.log('=== FINALIZADO ENVÍO DE SOLICITUD ===');
   }
 };
-
 </script>
 
 <style scoped lang="scss">
@@ -416,6 +487,7 @@ const submitApplication = async () => {
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  position: relative;
   
   h2 {
     color: #1b5e20;
@@ -563,6 +635,7 @@ const submitApplication = async () => {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  margin-top: 1rem;
   
   &:hover:not(:disabled) {
     background: #144017;
@@ -574,6 +647,26 @@ const submitApplication = async () => {
   }
 }
 
+.debug-btn {
+  width: 100%;
+  background: #ff9800;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    background: #f57c00;
+  }
+}
+
 @media (max-width: 768px) {
   .volunteer-content {
     grid-template-columns: 1fr;
@@ -582,6 +675,11 @@ const submitApplication = async () => {
   
   .volunteer-form {
     padding: 1.5rem;
+  }
+  
+  .debug-btn {
+    font-size: 0.8rem;
+    padding: 0.5rem;
   }
 }
 </style>
