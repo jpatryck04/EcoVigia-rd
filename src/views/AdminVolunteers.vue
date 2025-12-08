@@ -4,8 +4,8 @@
       <!-- Header -->
       <div class="page-header">
         <div class="header-content">
-          <h1>Gestión de Voluntarios</h1>
-          <p>Administra los voluntarios registrados en el sistema</p>
+          <h1>Gestión de Solicitudes de Voluntarios</h1>
+          <p>Revisa y aprueba las solicitudes de voluntarios registrados</p>
         </div>
         <button class="btn-back" @click="$router.push('/admin')">
           <i class="fas fa-arrow-left"></i>
@@ -268,12 +268,12 @@
 
       <!-- Modal de Detalles -->
       <VolunteerDetailModal 
-            v-if="selectedVolunteer"
-            :volunteer="selectedVolunteer"
-            @close="selectedVolunteer = null"
-            @update="handleVolunteerUpdate"
-            @action="handleVolunteerAction"
-        />
+        v-if="selectedVolunteer"
+        :volunteer="selectedVolunteer"
+        @close="selectedVolunteer = null"
+        @update="handleVolunteerUpdate"
+        @action="handleVolunteerAction"
+      />
 
       <!-- Modal de Confirmación -->
       <ConfirmationModal 
@@ -301,12 +301,14 @@ import type { Volunteer } from '@/types';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const appStore = useAppStore();
 
 // Estado
 const loading = ref(true);
 const volunteers = ref<Volunteer[]>([]);
 const selectedVolunteer = ref<Volunteer | null>(null);
 const showConfirmationModal = ref(false);
+
 const confirmationData = ref({
   title: '',
   message: '',
@@ -446,6 +448,22 @@ const clearFilters = () => {
 
 const sortBy = (field: string) => {
   // Implementar lógica de ordenamiento
+  // Puedes alternar entre ascendente y descendente
+  const currentOrder = filters.value.orden;
+  
+  if (field === 'nombre') {
+    if (currentOrder === 'nombre_asc') {
+      filters.value.orden = 'nombre_desc';
+    } else {
+      filters.value.orden = 'nombre_asc';
+    }
+  } else if (field === 'fecha_registro') {
+    if (currentOrder === 'fecha_desc') {
+      filters.value.orden = 'fecha_asc';
+    } else {
+      filters.value.orden = 'fecha_desc';
+    }
+  }
 };
 
 const getInitials = (nombre: string) => {
@@ -482,11 +500,30 @@ const loadVolunteers = async () => {
     // Simular carga de API
     await new Promise(resolve => setTimeout(resolve, 800));
     
-    // Datos de ejemplo - ESTOS SE LLENARÁN AUTOMÁTICAMENTE
-    // cuando los usuarios se registren en /voluntariado
+    // Datos de ejemplo
     volunteers.value = [
       // Los voluntarios se agregarán automáticamente aquí
       // cuando usen el formulario de registro
+      {
+        id: '1',
+        nombre: 'Juan Pérez',
+        cedula: '12345678901',
+        email: 'juan@example.com',
+        telefono: '809-123-4567',
+        estado: 'pendiente',
+        fecha_registro: new Date().toISOString(),
+        notas: 'Interesado en actividades de reciclaje'
+      },
+      {
+        id: '2',
+        nombre: 'María Rodríguez',
+        cedula: '98765432109',
+        email: 'maria@example.com',
+        telefono: '809-987-6543',
+        estado: 'activo',
+        fecha_registro: new Date(Date.now() - 86400000).toISOString(),
+        fecha_aprobacion: new Date().toISOString()
+      }
     ];
     
     // Intentar cargar del localStorage primero (para desarrollo)

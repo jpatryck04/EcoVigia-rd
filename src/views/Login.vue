@@ -122,7 +122,6 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { isValidEmail, isValidCedula } from '@/utils';
-import type { User } from '@/types';
 import RecoveryModal from '@/components/RecoveryModal.vue';
 
 const router = useRouter();
@@ -133,12 +132,6 @@ const userType = ref<'volunteer' | 'admin'>('volunteer');
 const loading = ref(false);
 const showPassword = ref(false);
 const showRecovery = ref(false);
-
-// Configuración de administradores (puede estar en .env en producción)
-const ADMIN_CREDENTIALS = {
-  email: 'admin@medioambiente.gob.do',
-  password: 'AdminMedioAmbiente2024!' // Cambiar en producción
-};
 
 const form = reactive({
   cedula: '',
@@ -154,7 +147,6 @@ const errors = reactive({
 });
 
 const validateForm = () => {
-  // Reset errors
   Object.keys(errors).forEach(key => errors[key as keyof typeof errors] = '');
 
   // Validar email
@@ -184,72 +176,42 @@ const handleLogin = async () => {
   loading.value = true;
 
   try {
-    if (userType.value === 'admin') {
-      await handleAdminLogin();
+    const success = await authStore.login(form.email, form.password, userType.value);
+    
+    if (success) {
+      // Login exitoso
+      appStore.addNotification({
+        message: userType.value === 'admin' 
+          ? '¡Bienvenido Administrador!' 
+          : '¡Bienvenido de vuelta!',
+        type: 'success'
+      });
+      
+      // Redirigir según tipo de usuario
+      if (userType.value === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/mis-reportes');
+      }
     } else {
-      await handleVolunteerLogin();
+      // Login fallido
+      const errorMessage = userType.value === 'admin'
+        ? 'Credenciales de administrador incorrectas'
+        : 'Credenciales incorrectas o cuenta pendiente de aprobación';
+      
+      appStore.addNotification({
+        message: errorMessage,
+        type: 'error'
+      });
     }
   } catch (error) {
     console.error('Login error:', error);
     appStore.addNotification({
-      message: 'Error al iniciar sesión. Verifica tus credenciales.',
+      message: 'Error al iniciar sesión. Por favor intenta nuevamente.',
       type: 'error'
     });
   } finally {
     loading.value = false;
-  }
-};
-
-const handleAdminLogin = async () => {
-  // Verificar credenciales de admin
-  if (form.email === ADMIN_CREDENTIALS.email && form.password === ADMIN_CREDENTIALS.password) {
-    const adminUser: User = {
-      id: 'admin-001',
-      cedula: '00000000000',
-      nombre: 'Administrador Ministerio',
-      email: ADMIN_CREDENTIALS.email,
-      telefono: '(809) 567-4300',
-      role: 'admin' as const
-    };
-
-    authStore.login(adminUser, 'admin-token-' + Date.now(), 'admin');
-    appStore.addNotification({
-      message: 'Bienvenido, Administrador',
-      type: 'success'
-    });
-    
-    router.push('/admin');
-  } else {
-    appStore.addNotification({
-      message: 'Credenciales de administrador incorrectas',
-      type: 'error'
-    });
-  }
-};
-
-const handleVolunteerLogin = async () => {
-  try {
-    // Simular login de voluntario (reemplazar con API real)
-    const mockVolunteer: User = {
-      id: 'vol-' + Date.now(),
-      cedula: form.cedula,
-      nombre: 'Voluntario Ejemplo',
-      email: form.email,
-      telefono: '(809) 000-0000',
-      role: 'volunteer' as const
-    };
-
-    const mockToken = 'volunteer-token-' + Date.now();
-    
-    authStore.login(mockVolunteer, mockToken, 'volunteer');
-    appStore.addNotification({
-      message: '¡Bienvenido de vuelta!',
-      type: 'success'
-    });
-    
-    router.push('/mis-reportes');
-  } catch (error) {
-    throw new Error('Error en login de voluntario');
   }
 };
 

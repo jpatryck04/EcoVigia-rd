@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { adminAuthGuard } from './middleware/adminAuth';
 
 const routes = [
   {
@@ -117,10 +118,10 @@ const routes = [
      👑 RUTAS DE ADMINISTRADOR
   -----------------------------*/
 {
-    path: '/admin',
-    name: 'AdminDashboard', // Cambiado de 'Admin' a 'AdminDashboard'
-    component: () => import('@/views/AdminDashboard.vue'), // Cambiado de AdminPanel.vue
-    meta: { requiresAuth: true, requiresAdmin: true }
+   path: '/admin',
+    name: 'Admin',
+    component: () => import('@/views/AdminDashboard.vue'),
+    beforeEnter: adminAuthGuard
   },
   {
     path: '/admin/reportes', // Agregar esta ruta que falta
@@ -132,7 +133,7 @@ const routes = [
     path: '/admin/voluntarios',
     name: 'AdminVolunteers',
     component: () => import('@/views/AdminVolunteers.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
+    beforeEnter: adminAuthGuard
   },
   {
     path: '/admin/areas',
@@ -144,7 +145,7 @@ const routes = [
     path: '/admin/noticias',
     name: 'AdminNews',
     component: () => import('@/views/AdminNews.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
+    beforeEnter: adminAuthGuard
   },
 
   // Ruta de fallback
