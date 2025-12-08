@@ -13,7 +13,7 @@
         </button>
       </div>
 
-      <!-- Estadísticas -->
+      <!-- Estadísticas en tiempo real -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon">
@@ -50,13 +50,13 @@
             <i class="fas fa-calendar-week"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ stats.thisWeek }}</div>
-            <div class="stat-label">Esta Semana</div>
+            <div class="stat-number">{{ stats.thisMonth }}</div>
+            <div class="stat-label">Registros este Mes</div>
           </div>
         </div>
       </div>
 
-      <!-- Filtros -->
+      <!-- Filtros y Búsqueda -->
       <div class="filters-section">
         <div class="filters-row">
           <div class="search-box">
@@ -91,123 +91,125 @@
         <p>Cargando solicitudes...</p>
       </div>
 
-      <!-- Lista de Solicitudes -->
-      <div v-else class="volunteers-list">
-        <!-- Filtro para mostrar solo pendientes por defecto -->
-        <div class="list-header">
-          <h2>Solicitudes Pendientes de Aprobación</h2>
-          <span class="badge">{{ pendingVolunteers.length }} solicitudes</span>
-        </div>
+      <!-- Contenido Principal -->
+      <div v-else class="volunteers-content">
+        <!-- Sección de Pendientes (visible por defecto) -->
+        <div class="pending-section">
+          <div class="section-header">
+            <h2>Solicitudes Pendientes de Aprobación</h2>
+            <span class="badge">{{ pendingVolunteers.length }} solicitudes</span>
+          </div>
 
-        <!-- Empty State para pendientes -->
-        <div v-if="pendingVolunteers.length === 0" class="empty-state">
-          <i class="fas fa-check-circle"></i>
-          <h3>No hay solicitudes pendientes</h3>
-          <p>Todas las solicitudes han sido revisadas</p>
-        </div>
+          <!-- Empty State para pendientes -->
+          <div v-if="pendingVolunteers.length === 0" class="empty-state">
+            <i class="fas fa-check-circle"></i>
+            <h3>No hay solicitudes pendientes</h3>
+            <p>Todas las solicitudes han sido revisadas</p>
+          </div>
 
-        <!-- Lista de pendientes -->
-        <div v-else class="pending-grid">
-          <div 
-            v-for="volunteer in pendingVolunteers" 
-            :key="volunteer.id"
-            class="volunteer-card"
-          >
-            <div class="card-header">
-              <div class="volunteer-info">
-                <div class="volunteer-avatar">
-                  {{ getInitials(volunteer.nombre) }}
+          <!-- Lista de pendientes -->
+          <div v-else class="pending-grid">
+            <div 
+              v-for="volunteer in pendingVolunteers" 
+              :key="volunteer.id"
+              class="volunteer-card"
+            >
+              <div class="card-header">
+                <div class="volunteer-info">
+                  <div class="volunteer-avatar">
+                    {{ getInitials(volunteer.nombre) }}
+                  </div>
+                  <div class="volunteer-details">
+                    <h3>{{ volunteer.nombre }}</h3>
+                    <div class="volunteer-meta">
+                      <span class="meta-item">
+                        <i class="fas fa-id-card"></i>
+                        {{ formatCedula(volunteer.cedula) }}
+                      </span>
+                      <span class="meta-item">
+                        <i class="fas fa-envelope"></i>
+                        {{ volunteer.email }}
+                      </span>
+                      <span class="meta-item">
+                        <i class="fas fa-phone"></i>
+                        {{ volunteer.telefono }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div class="volunteer-details">
-                  <h3>{{ volunteer.nombre }}</h3>
-                  <div class="volunteer-meta">
-                    <span class="meta-item">
-                      <i class="fas fa-id-card"></i>
-                      {{ formatCedula(volunteer.cedula) }}
-                    </span>
-                    <span class="meta-item">
-                      <i class="fas fa-envelope"></i>
-                      {{ volunteer.email }}
-                    </span>
-                    <span class="meta-item">
-                      <i class="fas fa-phone"></i>
-                      {{ volunteer.telefono }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div class="volunteer-date">
-                <i class="fas fa-calendar"></i>
-                {{ formatDate(volunteer.fecha_registro) }}
-              </div>
-            </div>
-
-            <div class="card-content">
-              <div class="info-section">
-                <h4>Información de Contacto</h4>
-                <div class="info-grid">
-                  <div class="info-item">
-                    <strong>Cédula:</strong>
-                    <span>{{ volunteer.cedula }}</span>
-                  </div>
-                  <div class="info-item">
-                    <strong>Email:</strong>
-                    <span>{{ volunteer.email }}</span>
-                  </div>
-                  <div class="info-item">
-                    <strong>Teléfono:</strong>
-                    <span>{{ volunteer.telefono }}</span>
-                  </div>
-                  <div class="info-item">
-                    <strong>Fecha de Solicitud:</strong>
-                    <span>{{ formatDateTime(volunteer.fecha_registro) }}</span>
-                  </div>
+                <div class="volunteer-date">
+                  <i class="fas fa-calendar"></i>
+                  {{ formatDate(volunteer.fecha_registro) }}
                 </div>
               </div>
 
-              <!-- Notas del administrador (si las hay) -->
-              <div v-if="volunteer.notas" class="notes-section">
-                <h4>Notas</h4>
-                <p>{{ volunteer.notas }}</p>
+              <div class="card-content">
+                <div class="info-section">
+                  <h4>Información de Contacto</h4>
+                  <div class="info-grid">
+                    <div class="info-item">
+                      <strong>Cédula:</strong>
+                      <span>{{ volunteer.cedula }}</span>
+                    </div>
+                    <div class="info-item">
+                      <strong>Email:</strong>
+                      <span>{{ volunteer.email }}</span>
+                    </div>
+                    <div class="info-item">
+                      <strong>Teléfono:</strong>
+                      <span>{{ volunteer.telefono }}</span>
+                    </div>
+                    <div class="info-item">
+                      <strong>Fecha de Solicitud:</strong>
+                      <span>{{ formatDateTime(volunteer.fecha_registro) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Notas del administrador (si las hay) -->
+                <div v-if="volunteer.notas" class="notes-section">
+                  <h4>Notas</h4>
+                  <p>{{ volunteer.notas }}</p>
+                </div>
               </div>
-            </div>
 
-            <div class="card-actions">
-              <button 
-                class="btn-action approve" 
-                @click="approveVolunteer(volunteer)"
-                title="Aprobar solicitud"
-              >
-                <i class="fas fa-check"></i>
-                Aprobar
-              </button>
-              
-              <button 
-                class="btn-action reject" 
-                @click="rejectVolunteer(volunteer)"
-                title="Rechazar solicitud"
-              >
-                <i class="fas fa-times"></i>
-                Rechazar
-              </button>
-              
-              <button 
-                class="btn-action view" 
-                @click="viewVolunteerDetails(volunteer)"
-                title="Ver detalles completos"
-              >
-                <i class="fas fa-eye"></i>
-                Ver Detalles
-              </button>
+              <div class="card-actions">
+                <button 
+                  class="btn-action approve" 
+                  @click="approveVolunteer(volunteer)"
+                  title="Aprobar solicitud"
+                >
+                  <i class="fas fa-check"></i>
+                  Aprobar
+                </button>
+                
+                <button 
+                  class="btn-action reject" 
+                  @click="rejectVolunteer(volunteer)"
+                  title="Rechazar solicitud"
+                >
+                  <i class="fas fa-times"></i>
+                  Rechazar
+                </button>
+                
+                <button 
+                  class="btn-action view" 
+                  @click="viewVolunteerDetails(volunteer)"
+                  title="Ver detalles completos"
+                >
+                  <i class="fas fa-eye"></i>
+                  Ver Detalles
+                </button>
 
-              <button 
-                class="btn-action notes" 
-                @click="openNotesModal(volunteer)"
-                title="Agregar notas"
-              >
-                <i class="fas fa-edit"></i>
-                Notas
-              </button>
+                <button 
+                  class="btn-action notes" 
+                  @click="openNotesModal(volunteer)"
+                  title="Agregar notas"
+                >
+                  <i class="fas fa-edit"></i>
+                  Notas
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -332,7 +334,7 @@
                       </td>
                       <td>{{ formatDate(volunteer.fecha_registro) }}</td>
                       <td>
-                        <button @click="viewVolunteerDetails(volunteer)" title="Ver">
+                        <button @click="viewVolunteerDetails(volunteer)" title="Ver detalles">
                           <i class="fas fa-eye"></i>
                         </button>
                       </td>
@@ -344,7 +346,7 @@
           </div>
         </div>
       </div>
-    </div> <!-- Cierra el div container -->
+    </div>
 
     <!-- Modal de Notas -->
     <NotesModal 
@@ -365,7 +367,7 @@
       @confirm="executeAction"
       @cancel="cancelAction"
     />
-  </div> <!-- Cierra el div admin-volunteers -->
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -394,7 +396,7 @@ const confirmationData = ref({
   confirmText: '',
   cancelText: 'Cancelar',
   type: 'info' as 'info' | 'warning' | 'danger',
-  action: '' as 'approve' | 'reject' | 'activate' | 'deactivate' | 'restore',
+  action: '' as 'approve' | 'reject' | 'deactivate' | 'restore',
   volunteerId: ''
 });
 
@@ -407,19 +409,15 @@ const filters = ref({
 // Estadísticas
 const stats = computed(() => {
   const now = new Date();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   
   return {
     pending: pendingVolunteers.value.length,
     approved: approvedVolunteers.value.length,
     rejected: rejectedVolunteers.value.length,
-    thisWeek: volunteers.value.filter(v => {
-      const fechaRegistro = new Date(v.fecha_registro);
-      return fechaRegistro >= startOfWeek;
-    }).length
+    thisMonth: volunteers.value.filter(v => 
+      new Date(v.fecha_registro) >= startOfMonth
+    ).length
   };
 });
 
@@ -481,40 +479,18 @@ const getStatusText = (status: string) => {
   return statusMap[status] || status;
 };
 
-// Cargar solicitudes
+// Cargar solicitudes desde localStorage
 const loadVolunteers = async () => {
   try {
     loading.value = true;
     
-    // Cargar de localStorage (o API en producción)
+    // Cargar de localStorage (esto se llena automáticamente desde el formulario de voluntariado)
     const storedVolunteers = localStorage.getItem('eco_vigia_volunteer_applications');
     volunteers.value = storedVolunteers ? JSON.parse(storedVolunteers) : [];
     
-    // Si no hay datos, crear algunos de ejemplo
+    // Si no hay datos, mostrar mensaje
     if (volunteers.value.length === 0) {
-      volunteers.value = [
-        {
-          id: '1',
-          nombre: 'Juan Pérez',
-          cedula: '12345678901',
-          email: 'juan@example.com',
-          telefono: '809-123-4567',
-          status: 'pending',
-          fecha_registro: new Date().toISOString(),
-          notas: 'Interesado en actividades de reciclaje'
-        },
-        {
-          id: '2',
-          nombre: 'María Rodríguez',
-          cedula: '98765432109',
-          email: 'maria@example.com',
-          telefono: '809-987-6543',
-          status: 'approved',
-          fecha_registro: new Date(Date.now() - 86400000).toISOString(),
-          fecha_aprobacion: new Date().toISOString()
-        }
-      ];
-      saveToStorage();
+      console.log('No hay solicitudes de voluntarios aún');
     }
     
   } catch (error) {
@@ -534,6 +510,7 @@ const applyFilters = () => {
 
 // Acciones sobre voluntarios
 const viewVolunteerDetails = (volunteer: any) => {
+  // Aquí podrías implementar un modal de detalles más completo
   alert(`Detalles de ${volunteer.nombre}\n\n` +
         `Cédula: ${volunteer.cedula}\n` +
         `Email: ${volunteer.email}\n` +
@@ -552,6 +529,11 @@ const saveNotes = (volunteerId: string, notes: string) => {
     volunteers.value[volunteerIndex].notas = notes;
     saveToStorage();
     selectedVolunteerForNotes.value = null;
+    
+    appStore.addNotification({
+      message: 'Notas guardadas exitosamente',
+      type: 'success'
+    });
   }
 };
 
@@ -563,27 +545,23 @@ const showConfirmation = (
   message: string,
   type: typeof confirmationData.value.type = 'warning'
 ) => {
+  const actionTexts: Record<string, string> = {
+    'approve': 'Aprobar',
+    'reject': 'Rechazar',
+    'deactivate': 'Desactivar',
+    'restore': 'Restaurar'
+  };
+  
   confirmationData.value = {
     title,
     message,
-    confirmText: getActionText(action),
+    confirmText: actionTexts[action] || 'Confirmar',
     cancelText: 'Cancelar',
     type,
     action,
     volunteerId: volunteer.id
   };
   showConfirmationModal.value = true;
-};
-
-const getActionText = (action: string) => {
-  const texts: Record<string, string> = {
-    'approve': 'Aprobar',
-    'reject': 'Rechazar',
-    'activate': 'Activar',
-    'deactivate': 'Desactivar',
-    'restore': 'Restaurar'
-  };
-  return texts[action] || 'Confirmar';
 };
 
 // Acciones específicas
@@ -772,12 +750,16 @@ onMounted(() => {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #e8f5e8;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  color: #1b5e20;
+  color: white;
+  
+  &:nth-child(1) i { background: #ff9800; }
+  &:nth-child(2) i { background: #4caf50; }
+  &:nth-child(3) i { background: #f44336; }
+  &:nth-child(4) i { background: #2196f3; }
 }
 
 .stat-content {
@@ -890,14 +872,14 @@ onMounted(() => {
   }
 }
 
-.volunteers-list {
+.volunteers-content {
   background: white;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.list-header {
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
