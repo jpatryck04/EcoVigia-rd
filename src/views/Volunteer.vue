@@ -159,7 +159,6 @@ import { useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { volunteerValidator } from '@/utils/validators';
 
-
 const router = useRouter();
 const authStore = useAuthStore();
 const appStore = useAppStore();

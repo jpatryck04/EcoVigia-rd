@@ -13,15 +13,15 @@
         </button>
       </div>
 
-      <!-- Estadísticas -->
+      <!-- Estadísticas en tiempo real -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-user-clock"></i>
+            <i class="fas fa-users"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ stats.pending }}</div>
-            <div class="stat-label">Solicitudes Pendientes</div>
+            <div class="stat-number">{{ stats.total }}</div>
+            <div class="stat-label">Voluntarios Totales</div>
           </div>
         </div>
         
@@ -30,33 +30,33 @@
             <i class="fas fa-user-check"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ stats.approved }}</div>
-            <div class="stat-label">Voluntarios Aprobados</div>
+            <div class="stat-number">{{ stats.active }}</div>
+            <div class="stat-label">Voluntarios Activos</div>
           </div>
         </div>
         
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-user-times"></i>
+            <i class="fas fa-user-plus"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ stats.rejected }}</div>
-            <div class="stat-label">Solicitudes Rechazadas</div>
+            <div class="stat-number">{{ stats.pending }}</div>
+            <div class="stat-label">Pendientes de Aprobación</div>
           </div>
         </div>
         
         <div class="stat-card">
           <div class="stat-icon">
-            <i class="fas fa-calendar-week"></i>
+            <i class="fas fa-calendar-alt"></i>
           </div>
           <div class="stat-content">
-            <div class="stat-number">{{ stats.thisWeek }}</div>
-            <div class="stat-label">Esta Semana</div>
+            <div class="stat-number">{{ stats.thisMonth }}</div>
+            <div class="stat-label">Registros este Mes</div>
           </div>
         </div>
       </div>
 
-      <!-- Filtros -->
+      <!-- Filtros y Búsqueda -->
       <div class="filters-section">
         <div class="filters-row">
           <div class="search-box">
@@ -64,7 +64,7 @@
             <input 
               v-model="filters.search"
               type="text" 
-              placeholder="Buscar por nombre, cédula o correo..." 
+              placeholder="Buscar voluntarios por nombre, cédula o correo..." 
               @input="applyFilters"
             >
           </div>
@@ -72,310 +72,232 @@
           <div class="filter-group">
             <select v-model="filters.estado" @change="applyFilters">
               <option value="">Todos los estados</option>
-              <option value="pending">Pendientes</option>
-              <option value="approved">Aprobados</option>
-              <option value="rejected">Rechazados</option>
+              <option value="activo">Activo</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="inactivo">Inactivo</option>
+              <option value="rechazado">Rechazado</option>
             </select>
           </div>
 
-          <button class="btn-refresh" @click="loadVolunteers">
-            <i class="fas fa-sync-alt"></i>
-            Actualizar
+          <div class="filter-group">
+            <select v-model="filters.orden" @change="applyFilters">
+              <option value="fecha_desc">Más recientes primero</option>
+              <option value="fecha_asc">Más antiguos primero</option>
+              <option value="nombre_asc">Nombre A-Z</option>
+              <option value="nombre_desc">Nombre Z-A</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="date-filters">
+          <div class="date-input">
+            <label>Desde:</label>
+            <input type="date" v-model="filters.fechaDesde" @change="applyFilters">
+          </div>
+          <div class="date-input">
+            <label>Hasta:</label>
+            <input type="date" v-model="filters.fechaHasta" @change="applyFilters">
+          </div>
+          <button class="btn-clear" @click="clearFilters">
+            <i class="fas fa-times"></i>
+            Limpiar Filtros
           </button>
         </div>
+      </div>
+
+      <!-- Exportar Datos -->
+      <div class="export-section">
+        <button class="btn-export" @click="exportToExcel">
+          <i class="fas fa-file-excel"></i>
+          Exportar a Excel
+        </button>
+        <button class="btn-export" @click="exportToPDF">
+          <i class="fas fa-file-pdf"></i>
+          Exportar a PDF
+        </button>
       </div>
 
       <!-- Loading -->
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
-        <p>Cargando solicitudes...</p>
+        <p>Cargando voluntarios...</p>
       </div>
 
-      <!-- Lista de Solicitudes -->
-      <div v-else class="volunteers-list">
-        <!-- Filtro para mostrar solo pendientes por defecto -->
-        <div class="list-header">
-          <h2>Solicitudes Pendientes de Aprobación</h2>
-          <span class="badge">{{ pendingVolunteers.length }} solicitudes</span>
-        </div>
-
-        <!-- Empty State para pendientes -->
-        <div v-if="pendingVolunteers.length === 0" class="empty-state">
-          <i class="fas fa-check-circle"></i>
-          <h3>No hay solicitudes pendientes</h3>
-          <p>Todas las solicitudes han sido revisadas</p>
-        </div>
-
-        <!-- Lista de pendientes -->
-        <div v-else class="pending-grid">
-          <div 
-            v-for="volunteer in pendingVolunteers" 
-            :key="volunteer.id"
-            class="volunteer-card"
-          >
-            <div class="card-header">
-              <div class="volunteer-info">
-                <div class="volunteer-avatar">
-                  {{ getInitials(volunteer.nombre) }}
-                </div>
-                <div class="volunteer-details">
-                  <h3>{{ volunteer.nombre }}</h3>
-                  <div class="volunteer-meta">
-                    <span class="meta-item">
-                      <i class="fas fa-id-card"></i>
-                      {{ formatCedula(volunteer.cedula) }}
-                    </span>
-                    <span class="meta-item">
-                      <i class="fas fa-envelope"></i>
-                      {{ volunteer.email }}
-                    </span>
-                    <span class="meta-item">
-                      <i class="fas fa-phone"></i>
-                      {{ volunteer.telefono }}
-                    </span>
+      <!-- Tabla de Voluntarios -->
+      <div v-else class="volunteers-table">
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th @click="sortBy('nombre')" class="sortable">
+                  Nombre
+                  <i class="fas fa-sort"></i>
+                </th>
+                <th>Cédula</th>
+                <th>Correo</th>
+                <th>Teléfono</th>
+                <th @click="sortBy('fecha_registro')" class="sortable">
+                  Fecha Registro
+                  <i class="fas fa-sort"></i>
+                </th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(volunteer, index) in paginatedVolunteers" :key="volunteer.id">
+                <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+                <td>
+                  <div class="user-info">
+                    <div class="user-avatar">
+                      {{ getInitials(volunteer.nombre) }}
+                    </div>
+                    <div class="user-details">
+                      <strong>{{ volunteer.nombre }}</strong>
+                      <span class="user-email">{{ volunteer.email }}</span>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div class="volunteer-date">
-                <i class="fas fa-calendar"></i>
-                {{ formatDate(volunteer.fecha_registro) }}
-              </div>
-            </div>
-
-            <div class="card-content">
-              <div class="info-section">
-                <h4>Información de Contacto</h4>
-                <div class="info-grid">
-                  <div class="info-item">
-                    <strong>Cédula:</strong>
-                    <span>{{ volunteer.cedula }}</span>
-                  </div>
-                  <div class="info-item">
-                    <strong>Email:</strong>
-                    <span>{{ volunteer.email }}</span>
-                  </div>
-                  <div class="info-item">
-                    <strong>Teléfono:</strong>
-                    <span>{{ volunteer.telefono }}</span>
-                  </div>
-                  <div class="info-item">
-                    <strong>Fecha de Solicitud:</strong>
-                    <span>{{ formatDateTime(volunteer.fecha_registro) }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Notas del administrador (si las hay) -->
-              <div v-if="volunteer.notas" class="notes-section">
-                <h4>Notas</h4>
-                <p>{{ volunteer.notas }}</p>
-              </div>
-            </div>
-
-            <div class="card-actions">
-              <button 
-                class="btn-action approve" 
-                @click="approveVolunteer(volunteer)"
-                title="Aprobar solicitud"
-              >
-                <i class="fas fa-check"></i>
-                Aprobar
-              </button>
-              
-              <button 
-                class="btn-action reject" 
-                @click="rejectVolunteer(volunteer)"
-                title="Rechazar solicitud"
-              >
-                <i class="fas fa-times"></i>
-                Rechazar
-              </button>
-              
-              <button 
-                class="btn-action view" 
-                @click="viewVolunteerDetails(volunteer)"
-                title="Ver detalles completos"
-              >
-                <i class="fas fa-eye"></i>
-                Ver Detalles
-              </button>
-
-              <button 
-                class="btn-action notes" 
-                @click="openNotesModal(volunteer)"
-                title="Agregar notas"
-              >
-                <i class="fas fa-edit"></i>
-                Notas
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pestañas para otros estados -->
-        <div class="tabs-section">
-          <div class="tabs">
-            <button 
-              :class="['tab', { active: activeTab === 'approved' }]"
-              @click="activeTab = 'approved'"
-            >
-              <i class="fas fa-user-check"></i>
-              Aprobados ({{ approvedVolunteers.length }})
-            </button>
-            <button 
-              :class="['tab', { active: activeTab === 'rejected' }]"
-              @click="activeTab = 'rejected'"
-            >
-              <i class="fas fa-user-times"></i>
-              Rechazados ({{ rejectedVolunteers.length }})
-            </button>
-            <button 
-              :class="['tab', { active: activeTab === 'all' }]"
-              @click="activeTab = 'all'"
-            >
-              <i class="fas fa-users"></i>
-              Todos ({{ allVolunteers.length }})
-            </button>
-          </div>
-
-          <!-- Contenido de las pestañas -->
-          <div class="tab-content">
-            <!-- Aprobados -->
-            <div v-if="activeTab === 'approved'" class="approved-list">
-              <div v-if="approvedVolunteers.length === 0" class="empty-tab">
-                <i class="fas fa-user-check"></i>
-                <p>No hay voluntarios aprobados</p>
-              </div>
-              
-              <div v-else>
-                <div 
-                  v-for="volunteer in approvedVolunteers" 
-                  :key="volunteer.id"
-                  class="volunteer-item approved"
-                >
-                  <div class="item-avatar">{{ getInitials(volunteer.nombre) }}</div>
-                  <div class="item-details">
-                    <strong>{{ volunteer.nombre }}</strong>
-                    <span>{{ volunteer.email }}</span>
-                    <small v-if="volunteer.fecha_aprobacion">Aprobado el {{ formatDate(volunteer.fecha_aprobacion) }}</small>
-                  </div>
-                  <div class="item-actions">
-                    <button @click="viewVolunteerDetails(volunteer)" title="Ver detalles">
+                </td>
+                <td>{{ formatCedula(volunteer.cedula) }}</td>
+                <td>{{ volunteer.email }}</td>
+                <td>{{ volunteer.telefono }}</td>
+                <td>{{ formatDate(volunteer.fecha_registro) }}</td>
+                <td>
+                  <span class="status-badge" :class="volunteer.estado">
+                    {{ getStatusText(volunteer.estado) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button 
+                      class="btn-action view" 
+                      @click="viewVolunteer(volunteer)"
+                      title="Ver detalles"
+                    >
                       <i class="fas fa-eye"></i>
                     </button>
-                    <button @click="deactivateVolunteer(volunteer)" title="Desactivar">
+                    
+                    <button 
+                      v-if="volunteer.estado === 'pendiente'"
+                      class="btn-action approve" 
+                      @click="approveVolunteer(volunteer)"
+                      title="Aprobar voluntario"
+                    >
+                      <i class="fas fa-check"></i>
+                    </button>
+                    
+                    <button 
+                      v-if="volunteer.estado === 'pendiente'"
+                      class="btn-action reject" 
+                      @click="rejectVolunteer(volunteer)"
+                      title="Rechazar solicitud"
+                    >
+                      <i class="fas fa-times"></i>
+                    </button>
+                    
+                    <button 
+                      v-if="volunteer.estado === 'activo'"
+                      class="btn-action deactivate" 
+                      @click="deactivateVolunteer(volunteer)"
+                      title="Desactivar voluntario"
+                    >
                       <i class="fas fa-user-slash"></i>
                     </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Rechazados -->
-            <div v-if="activeTab === 'rejected'" class="rejected-list">
-              <div v-if="rejectedVolunteers.length === 0" class="empty-tab">
-                <i class="fas fa-user-times"></i>
-                <p>No hay solicitudes rechazadas</p>
-              </div>
-              
-              <div v-else>
-                <div 
-                  v-for="volunteer in rejectedVolunteers" 
-                  :key="volunteer.id"
-                  class="volunteer-item rejected"
-                >
-                  <div class="item-avatar">{{ getInitials(volunteer.nombre) }}</div>
-                  <div class="item-details">
-                    <strong>{{ volunteer.nombre }}</strong>
-                    <span>{{ volunteer.email }}</span>
-                    <small v-if="volunteer.fecha_rechazo">Rechazado el {{ formatDate(volunteer.fecha_rechazo) }}</small>
-                  </div>
-                  <div class="item-actions">
-                    <button @click="viewVolunteerDetails(volunteer)" title="Ver detalles">
-                      <i class="fas fa-eye"></i>
+                    
+                    <button 
+                      v-if="volunteer.estado === 'inactivo'"
+                      class="btn-action activate" 
+                      @click="activateVolunteer(volunteer)"
+                      title="Reactivar voluntario"
+                    >
+                      <i class="fas fa-user-check"></i>
                     </button>
-                    <button @click="restoreVolunteer(volunteer)" title="Restaurar">
-                      <i class="fas fa-redo"></i>
+                    
+                    <button 
+                      class="btn-action delete" 
+                      @click="deleteVolunteer(volunteer)"
+                      title="Eliminar voluntario"
+                    >
+                      <i class="fas fa-trash"></i>
                     </button>
                   </div>
-                </div>
-              </div>
-            </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-            <!-- Todos -->
-            <div v-if="activeTab === 'all'" class="all-list">
-              <div v-if="filteredVolunteers.length === 0" class="empty-tab">
-                <i class="fas fa-users"></i>
-                <p>No hay voluntarios registrados</p>
-              </div>
-              <div v-else class="volunteers-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Cédula</th>
-                      <th>Email</th>
-                      <th>Estado</th>
-                      <th>Fecha</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="volunteer in filteredVolunteers" :key="volunteer.id">
-                      <td>{{ volunteer.nombre }}</td>
-                      <td>{{ formatCedula(volunteer.cedula) }}</td>
-                      <td>{{ volunteer.email }}</td>
-                      <td>
-                        <span class="status-badge" :class="volunteer.status">
-                          {{ getStatusText(volunteer.status) }}
-                        </span>
-                      </td>
-                      <td>{{ formatDate(volunteer.fecha_registro) }}</td>
-                      <td>
-                        <button @click="viewVolunteerDetails(volunteer)" title="Ver">
-                          <i class="fas fa-eye"></i>
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+        <!-- Paginación -->
+        <div class="pagination" v-if="totalPages > 1">
+          <button 
+            class="pagination-btn" 
+            :disabled="currentPage === 1"
+            @click="changePage(currentPage - 1)"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          
+          <button 
+            v-for="page in visiblePages" 
+            :key="page"
+            class="pagination-btn" 
+            :class="{ active: page === currentPage }"
+            @click="changePage(page)"
+          >
+            {{ page }}
+          </button>
+          
+          <button 
+            class="pagination-btn" 
+            :disabled="currentPage === totalPages"
+            @click="changePage(currentPage + 1)"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
         </div>
       </div>
-    </div> <!-- Cierra el div container -->
 
-    <!-- Modal de Notas -->
-    <NotesModal 
-      v-if="selectedVolunteerForNotes"
-      :volunteer="selectedVolunteerForNotes"
-      @save="saveNotes"
-      @close="selectedVolunteerForNotes = null"
-    />
+      <!-- Empty State -->
+      <div v-if="!loading && filteredVolunteers.length === 0" class="empty-state">
+        <i class="fas fa-users-slash"></i>
+        <h3>No se encontraron voluntarios</h3>
+        <p v-if="hasActiveFilters">Intenta ajustar los filtros de búsqueda</p>
+        <p v-else>No hay voluntarios registrados aún</p>
+      </div>
 
-    <!-- Modal de Confirmación -->
-    <ConfirmationModal 
-      v-if="showConfirmationModal"
-      :title="confirmationData.title"
-      :message="confirmationData.message"
-      :confirmText="confirmationData.confirmText"
-      :cancelText="confirmationData.cancelText"
-      :type="confirmationData.type"
-      @confirm="executeAction"
-      @cancel="cancelAction"
-    />
-  </div> <!-- Cierra el div admin-volunteers -->
+      <!-- Modal de Detalles -->
+      <VolunteerDetailModal 
+        v-if="selectedVolunteer"
+        :volunteer="selectedVolunteer"
+        @close="selectedVolunteer = null"
+        @update="handleVolunteerUpdate"
+        @action="handleVolunteerAction"
+      />
+
+      <!-- Modal de Confirmación -->
+      <ConfirmationModal 
+        v-if="showConfirmationModal"
+        :title="confirmationData.title"
+        :message="confirmationData.message"
+        :confirmText="confirmationData.confirmText"
+        :cancelText="confirmationData.cancelText"
+        :type="confirmationData.type"
+        @confirm="executeAction"
+        @cancel="cancelAction"
+      />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useAppStore } from '@/stores/app';
-import { formatDate, formatDateTime } from '@/utils';
-import NotesModal from '@/components/admin/NotesModal.vue';
+import { formatDate, truncateText } from '@/utils';
+import VolunteerDetailModal from '@/components/admin/VolunteerDetailModal.vue';
 import ConfirmationModal from '@/components/common/ConfirmationModal.vue';
+import type { Volunteer } from '@/types';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -383,10 +305,9 @@ const appStore = useAppStore();
 
 // Estado
 const loading = ref(true);
-const volunteers = ref<any[]>([]);
-const selectedVolunteerForNotes = ref<any>(null);
+const volunteers = ref<Volunteer[]>([]);
+const selectedVolunteer = ref<Volunteer | null>(null);
 const showConfirmationModal = ref(false);
-const activeTab = ref<'approved' | 'rejected' | 'all'>('approved');
 
 const confirmationData = ref({
   title: '',
@@ -394,67 +315,157 @@ const confirmationData = ref({
   confirmText: '',
   cancelText: 'Cancelar',
   type: 'info' as 'info' | 'warning' | 'danger',
-  action: '' as 'approve' | 'reject' | 'activate' | 'deactivate' | 'restore',
+  action: '' as 'approve' | 'reject' | 'activate' | 'deactivate' | 'delete',
   volunteerId: ''
 });
 
 // Filtros
 const filters = ref({
   search: '',
-  estado: ''
+  estado: '',
+  orden: 'fecha_desc',
+  fechaDesde: '',
+  fechaHasta: ''
 });
+
+// Paginación
+const currentPage = ref(1);
+const itemsPerPage = 10;
 
 // Estadísticas
 const stats = computed(() => {
   const now = new Date();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   
   return {
-    pending: pendingVolunteers.value.length,
-    approved: approvedVolunteers.value.length,
-    rejected: rejectedVolunteers.value.length,
-    thisWeek: volunteers.value.filter(v => {
-      const fechaRegistro = new Date(v.fecha_registro);
-      return fechaRegistro >= startOfWeek;
-    }).length
+    total: volunteers.value.length,
+    active: volunteers.value.filter(v => v.estado === 'activo').length,
+    pending: volunteers.value.filter(v => v.estado === 'pendiente').length,
+    thisMonth: volunteers.value.filter(v => 
+      new Date(v.fecha_registro) >= startOfMonth
+    ).length
   };
 });
 
-// Voluntarios filtrados por estado
-const allVolunteers = computed(() => volunteers.value);
-const pendingVolunteers = computed(() => 
-  volunteers.value.filter(v => v.status === 'pending')
-);
-const approvedVolunteers = computed(() => 
-  volunteers.value.filter(v => v.status === 'approved')
-);
-const rejectedVolunteers = computed(() => 
-  volunteers.value.filter(v => v.status === 'rejected')
-);
-
+// Voluntarios filtrados
 const filteredVolunteers = computed(() => {
-  let filtered = volunteers.value;
+  let filtered = [...volunteers.value];
 
+  // Búsqueda
   if (filters.value.search) {
     const search = filters.value.search.toLowerCase();
     filtered = filtered.filter(v =>
       v.nombre.toLowerCase().includes(search) ||
-      v.cedula.toLowerCase().includes(search) ||
-      v.email.toLowerCase().includes(search)
+      v.cedula.includes(search) ||
+      v.email.toLowerCase().includes(search) ||
+      v.telefono.includes(search)
     );
   }
 
+  // Filtro por estado
   if (filters.value.estado) {
-    filtered = filtered.filter(v => v.status === filters.value.estado);
+    filtered = filtered.filter(v => v.estado === filters.value.estado);
   }
+
+  // Filtro por fecha
+  if (filters.value.fechaDesde) {
+    const desde = new Date(filters.value.fechaDesde);
+    filtered = filtered.filter(v => new Date(v.fecha_registro) >= desde);
+  }
+
+  if (filters.value.fechaHasta) {
+    const hasta = new Date(filters.value.fechaHasta);
+    hasta.setHours(23, 59, 59, 999); // Fin del día
+    filtered = filtered.filter(v => new Date(v.fecha_registro) <= hasta);
+  }
+
+  // Ordenamiento
+  filtered.sort((a, b) => {
+    switch (filters.value.orden) {
+      case 'nombre_asc':
+        return a.nombre.localeCompare(b.nombre);
+      case 'nombre_desc':
+        return b.nombre.localeCompare(a.nombre);
+      case 'fecha_asc':
+        return new Date(a.fecha_registro).getTime() - new Date(b.fecha_registro).getTime();
+      case 'fecha_desc':
+        return new Date(b.fecha_registro).getTime() - new Date(a.fecha_registro).getTime();
+      default:
+        return 0;
+    }
+  });
 
   return filtered;
 });
 
-// Métodos de utilidad
+// Paginación
+const totalPages = computed(() => 
+  Math.ceil(filteredVolunteers.value.length / itemsPerPage)
+);
+
+const paginatedVolunteers = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredVolunteers.value.slice(start, end);
+});
+
+const visiblePages = computed(() => {
+  const pages = [];
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2));
+  let end = Math.min(totalPages.value, start + maxVisible - 1);
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  
+  return pages;
+});
+
+const hasActiveFilters = computed(() => {
+  return Object.values(filters.value).some(value => value !== '');
+});
+
+// Métodos
+const applyFilters = () => {
+  currentPage.value = 1; // Resetear a primera página
+};
+
+const clearFilters = () => {
+  filters.value = {
+    search: '',
+    estado: '',
+    orden: 'fecha_desc',
+    fechaDesde: '',
+    fechaHasta: ''
+  };
+  currentPage.value = 1;
+};
+
+const sortBy = (field: string) => {
+  // Implementar lógica de ordenamiento
+  // Puedes alternar entre ascendente y descendente
+  const currentOrder = filters.value.orden;
+  
+  if (field === 'nombre') {
+    if (currentOrder === 'nombre_asc') {
+      filters.value.orden = 'nombre_desc';
+    } else {
+      filters.value.orden = 'nombre_asc';
+    }
+  } else if (field === 'fecha_registro') {
+    if (currentOrder === 'fecha_desc') {
+      filters.value.orden = 'fecha_asc';
+    } else {
+      filters.value.orden = 'fecha_desc';
+    }
+  }
+};
+
 const getInitials = (nombre: string) => {
   return nombre
     .split(' ')
@@ -472,92 +483,90 @@ const formatCedula = (cedula: string) => {
   return cedula;
 };
 
-const getStatusText = (status: string) => {
+const getStatusText = (estado: string) => {
   const statusMap: Record<string, string> = {
-    'pending': 'Pendiente',
-    'approved': 'Aprobado',
-    'rejected': 'Rechazado'
+    'activo': 'Activo',
+    'pendiente': 'Pendiente',
+    'inactivo': 'Inactivo',
+    'rechazado': 'Rechazado'
   };
-  return statusMap[status] || status;
+  return statusMap[estado] || estado;
 };
 
-// Cargar solicitudes
 const loadVolunteers = async () => {
   try {
     loading.value = true;
     
-    // Cargar de localStorage (o API en producción)
-    const storedVolunteers = localStorage.getItem('eco_vigia_volunteer_applications');
-    volunteers.value = storedVolunteers ? JSON.parse(storedVolunteers) : [];
+    // Simular carga de API
+    await new Promise(resolve => setTimeout(resolve, 800));
     
-    // Si no hay datos, crear algunos de ejemplo
-    if (volunteers.value.length === 0) {
-      volunteers.value = [
-        {
-          id: '1',
-          nombre: 'Juan Pérez',
-          cedula: '12345678901',
-          email: 'juan@example.com',
-          telefono: '809-123-4567',
-          status: 'pending',
-          fecha_registro: new Date().toISOString(),
-          notas: 'Interesado en actividades de reciclaje'
-        },
-        {
-          id: '2',
-          nombre: 'María Rodríguez',
-          cedula: '98765432109',
-          email: 'maria@example.com',
-          telefono: '809-987-6543',
-          status: 'approved',
-          fecha_registro: new Date(Date.now() - 86400000).toISOString(),
-          fecha_aprobacion: new Date().toISOString()
-        }
-      ];
-      saveToStorage();
+    // Datos de ejemplo
+    volunteers.value = [
+      // Los voluntarios se agregarán automáticamente aquí
+      // cuando usen el formulario de registro
+      {
+        id: '1',
+        nombre: 'Juan Pérez',
+        cedula: '12345678901',
+        email: 'juan@example.com',
+        telefono: '809-123-4567',
+        estado: 'pendiente',
+        fecha_registro: new Date().toISOString(),
+        notas: 'Interesado en actividades de reciclaje'
+      },
+      {
+        id: '2',
+        nombre: 'María Rodríguez',
+        cedula: '98765432109',
+        email: 'maria@example.com',
+        telefono: '809-987-6543',
+        estado: 'activo',
+        fecha_registro: new Date(Date.now() - 86400000).toISOString(),
+        fecha_aprobacion: new Date().toISOString()
+      }
+    ];
+    
+    // Intentar cargar del localStorage primero (para desarrollo)
+    const savedVolunteers = localStorage.getItem('eco_vigia_volunteers');
+    if (savedVolunteers) {
+      volunteers.value = JSON.parse(savedVolunteers);
     }
     
   } catch (error) {
     console.error('Error loading volunteers:', error);
-    appStore.addNotification({
-      message: 'Error al cargar las solicitudes',
-      type: 'error'
-    });
   } finally {
     loading.value = false;
   }
 };
 
-const applyFilters = () => {
-  // Los filtros se aplican automáticamente mediante computed
-};
-
 // Acciones sobre voluntarios
-const viewVolunteerDetails = (volunteer: any) => {
-  alert(`Detalles de ${volunteer.nombre}\n\n` +
-        `Cédula: ${volunteer.cedula}\n` +
-        `Email: ${volunteer.email}\n` +
-        `Teléfono: ${volunteer.telefono}\n` +
-        `Estado: ${getStatusText(volunteer.status)}\n` +
-        `Fecha: ${formatDateTime(volunteer.fecha_registro)}`);
+const viewVolunteer = (volunteer: Volunteer) => {
+  selectedVolunteer.value = volunteer;
 };
 
-const openNotesModal = (volunteer: any) => {
-  selectedVolunteerForNotes.value = volunteer;
-};
-
-const saveNotes = (volunteerId: string, notes: string) => {
-  const volunteerIndex = volunteers.value.findIndex(v => v.id === volunteerId);
-  if (volunteerIndex !== -1) {
-    volunteers.value[volunteerIndex].notas = notes;
-    saveToStorage();
-    selectedVolunteerForNotes.value = null;
+const handleVolunteerAction = (actionType: string) => {
+  if (!selectedVolunteer.value) return;
+  
+  switch (actionType) {
+    case 'approve':
+      approveVolunteer(selectedVolunteer.value);
+      break;
+    case 'reject':
+      rejectVolunteer(selectedVolunteer.value);
+      break;
+    case 'activate':
+      activateVolunteer(selectedVolunteer.value);
+      break;
+    case 'deactivate':
+      deactivateVolunteer(selectedVolunteer.value);
+      break;
   }
+  
+  selectedVolunteer.value = null;
 };
 
-// Mostrar confirmación
 const showConfirmation = (
-  volunteer: any,
+  volunteer: Volunteer,
   action: typeof confirmationData.value.action,
   title: string,
   message: string,
@@ -566,7 +575,7 @@ const showConfirmation = (
   confirmationData.value = {
     title,
     message,
-    confirmText: getActionText(action),
+    confirmText: action === 'delete' ? 'Eliminar' : 'Confirmar',
     cancelText: 'Cancelar',
     type,
     action,
@@ -575,19 +584,7 @@ const showConfirmation = (
   showConfirmationModal.value = true;
 };
 
-const getActionText = (action: string) => {
-  const texts: Record<string, string> = {
-    'approve': 'Aprobar',
-    'reject': 'Rechazar',
-    'activate': 'Activar',
-    'deactivate': 'Desactivar',
-    'restore': 'Restaurar'
-  };
-  return texts[action] || 'Confirmar';
-};
-
-// Acciones específicas
-const approveVolunteer = (volunteer: any) => {
+const approveVolunteer = (volunteer: Volunteer) => {
   showConfirmation(
     volunteer,
     'approve',
@@ -597,17 +594,27 @@ const approveVolunteer = (volunteer: any) => {
   );
 };
 
-const rejectVolunteer = (volunteer: any) => {
+const rejectVolunteer = (volunteer: Volunteer) => {
   showConfirmation(
     volunteer,
     'reject',
-    'Rechazar Solicitud',
+    'Rechazar Voluntario',
     `¿Estás seguro de rechazar la solicitud de ${volunteer.nombre}?`,
     'warning'
   );
 };
 
-const deactivateVolunteer = (volunteer: any) => {
+const activateVolunteer = (volunteer: Volunteer) => {
+  showConfirmation(
+    volunteer,
+    'activate',
+    'Activar Voluntario',
+    `¿Activar a ${volunteer.nombre} como voluntario?`,
+    'info'
+  );
+};
+
+const deactivateVolunteer = (volunteer: Volunteer) => {
   showConfirmation(
     volunteer,
     'deactivate',
@@ -617,66 +624,44 @@ const deactivateVolunteer = (volunteer: any) => {
   );
 };
 
-const restoreVolunteer = (volunteer: any) => {
+const deleteVolunteer = (volunteer: Volunteer) => {
   showConfirmation(
     volunteer,
-    'restore',
-    'Restaurar Solicitud',
-    `¿Restaurar la solicitud de ${volunteer.nombre} a pendiente?`,
-    'info'
+    'delete',
+    'Eliminar Voluntario',
+    `¿Eliminar permanentemente a ${volunteer.nombre}? Esta acción no se puede deshacer.`,
+    'danger'
   );
 };
 
-// Ejecutar acción confirmada
 const executeAction = () => {
   const { action, volunteerId } = confirmationData.value;
-  const volunteerIndex = volunteers.value.findIndex(v => v.id === volunteerId);
+  const volunteer = volunteers.value.find(v => v.id === volunteerId);
   
-  if (volunteerIndex === -1) return;
-  
-  const volunteer = volunteers.value[volunteerIndex];
+  if (!volunteer) return;
   
   switch (action) {
     case 'approve':
-      volunteer.status = 'approved';
+      volunteer.estado = 'activo';
       volunteer.fecha_aprobacion = new Date().toISOString();
-      appStore.addNotification({
-        message: `Voluntario ${volunteer.nombre} aprobado`,
-        type: 'success'
-      });
       break;
-      
     case 'reject':
-      volunteer.status = 'rejected';
-      volunteer.fecha_rechazo = new Date().toISOString();
-      appStore.addNotification({
-        message: `Solicitud de ${volunteer.nombre} rechazada`,
-        type: 'warning'
-      });
+      volunteer.estado = 'rechazado';
       break;
-      
+    case 'activate':
+      volunteer.estado = 'activo';
+      break;
     case 'deactivate':
-      volunteer.status = 'rejected';
-      volunteer.fecha_rechazo = new Date().toISOString();
-      appStore.addNotification({
-        message: `Voluntario ${volunteer.nombre} desactivado`,
-        type: 'warning'
-      });
+      volunteer.estado = 'inactivo';
       break;
-      
-    case 'restore':
-      volunteer.status = 'pending';
-      delete volunteer.fecha_rechazo;
-      delete volunteer.fecha_aprobacion;
-      appStore.addNotification({
-        message: `Solicitud de ${volunteer.nombre} restaurada`,
-        type: 'info'
-      });
+    case 'delete':
+      volunteers.value = volunteers.value.filter(v => v.id !== volunteerId);
       break;
   }
   
-  // Guardar cambios
-  saveToStorage();
+  // Guardar en localStorage (en desarrollo)
+  localStorage.setItem('eco_vigia_volunteers', JSON.stringify(volunteers.value));
+  
   showConfirmationModal.value = false;
 };
 
@@ -684,13 +669,26 @@ const cancelAction = () => {
   showConfirmationModal.value = false;
 };
 
-// Guardar en localStorage
-const saveToStorage = () => {
-  try {
-    localStorage.setItem('eco_vigia_volunteer_applications', JSON.stringify(volunteers.value));
-  } catch (error) {
-    console.error('Error saving volunteers:', error);
+const handleVolunteerUpdate = (updatedVolunteer: Volunteer) => {
+  const index = volunteers.value.findIndex(v => v.id === updatedVolunteer.id);
+  if (index !== -1) {
+    volunteers.value[index] = updatedVolunteer;
+    localStorage.setItem('eco_vigia_volunteers', JSON.stringify(volunteers.value));
   }
+};
+
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+};
+
+const exportToExcel = () => {
+  alert('Función de exportación a Excel en desarrollo');
+};
+
+const exportToPDF = () => {
+  alert('Función de exportación a PDF en desarrollo');
 };
 
 onMounted(() => {
@@ -807,7 +805,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: 1rem;
-  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .search-box {
@@ -844,7 +842,7 @@ onMounted(() => {
     background: white;
     font-size: 1rem;
     cursor: pointer;
-    min-width: 150px;
+    min-width: 180px;
     
     &:focus {
       outline: none;
@@ -853,10 +851,67 @@ onMounted(() => {
   }
 }
 
-.btn-refresh {
-  background: #1b5e20;
-  color: white;
-  border: none;
+.date-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  label {
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  input {
+    padding: 0.5rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    
+    &:focus {
+      outline: none;
+      border-color: #1b5e20;
+    }
+  }
+}
+
+.btn-clear {
+  background: #f8f9fa;
+  color: #666;
+  border: 2px solid #e0e0e0;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  margin-left: auto;
+  
+  &:hover {
+    background: #e0e0e0;
+    color: #333;
+  }
+}
+
+.export-section {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn-export {
+  background: white;
+  color: #666;
+  border: 2px solid #e0e0e0;
   padding: 0.75rem 1.5rem;
   border-radius: 6px;
   font-weight: 600;
@@ -864,10 +919,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
   
   &:hover {
-    background: #144017;
+    background: #f8f9fa;
+    border-color: #1b5e20;
+    color: #1b5e20;
   }
 }
 
@@ -890,34 +947,231 @@ onMounted(() => {
   }
 }
 
-.volunteers-list {
+.volunteers-table {
   background: white;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
 }
 
-.list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
-  background: #f8f9fa;
+.table-responsive {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
   
-  h2 {
-    color: #1b5e20;
-    margin: 0;
-    font-size: 1.3rem;
+  thead {
+    background: #1b5e20;
+    
+    th {
+      color: white;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+      
+      &.sortable {
+        cursor: pointer;
+        user-select: none;
+        
+        &:hover {
+          background: #144017;
+        }
+      }
+    }
   }
   
-  .badge {
-    background: #ff9800;
+  tbody {
+    tr {
+      border-bottom: 1px solid #e0e0e0;
+      
+      &:hover {
+        background: #f8f9fa;
+      }
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      td {
+        padding: 1rem;
+        color: #333;
+      }
+    }
+  }
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1b5e20, #4caf50);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-details {
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  
+  .user-email {
+    font-size: 0.8rem;
+    color: #666;
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  
+  &.activo {
+    background: #e8f5e8;
+    color: #4caf50;
+  }
+  
+  &.pendiente {
+    background: #fff3e0;
+    color: #ff9800;
+  }
+  
+  &.inactivo {
+    background: #f5f5f5;
+    color: #666;
+  }
+  
+  &.rechazado {
+    background: #ffebee;
+    color: #f44336;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  
+  .btn-action {
+    width: 35px;
+    height: 35px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    
+    &.view {
+      background: #e3f2fd;
+      color: #1976d2;
+      
+      &:hover {
+        background: #1976d2;
+        color: white;
+      }
+    }
+    
+    &.approve {
+      background: #e8f5e8;
+      color: #4caf50;
+      
+      &:hover {
+        background: #4caf50;
+        color: white;
+      }
+    }
+    
+    &.reject {
+      background: #ffebee;
+      color: #f44336;
+      
+      &:hover {
+        background: #f44336;
+        color: white;
+      }
+    }
+    
+    &.activate {
+      background: #e8f5e8;
+      color: #4caf50;
+      
+      &:hover {
+        background: #4caf50;
+        color: white;
+      }
+    }
+    
+    &.deactivate {
+      background: #fff3e0;
+      color: #ff9800;
+      
+      &:hover {
+        background: #ff9800;
+        color: white;
+      }
+    }
+    
+    &.delete {
+      background: #f5f5f5;
+      color: #666;
+      
+      &:hover {
+        background: #f44336;
+        color: white;
+      }
+    }
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.pagination-btn {
+  min-width: 40px;
+  height: 40px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  
+  &:hover:not(:disabled) {
+    border-color: #1b5e20;
+    color: #1b5e20;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  &.active {
+    background: #1b5e20;
     color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
+    border-color: #1b5e20;
   }
 }
 
@@ -929,405 +1183,12 @@ onMounted(() => {
   i {
     font-size: 4rem;
     margin-bottom: 1rem;
-    color: #4caf50;
-  }
-  
-  h3 {
-    margin-bottom: 0.5rem;
-    color: #333;
-  }
-}
-
-.pending-grid {
-  padding: 1.5rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-  gap: 1.5rem;
-}
-
-.volunteer-card {
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: box-shadow 0.3s ease;
-  
-  &:hover {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  }
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.volunteer-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.volunteer-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1b5e20, #4caf50);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 1.2rem;
-}
-
-.volunteer-details {
-  h3 {
-    margin: 0 0 0.5rem 0;
-    color: #333;
-    font-size: 1.2rem;
-  }
-}
-
-.volunteer-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #666;
-  font-size: 0.9rem;
-  
-  i {
-    color: #1b5e20;
-  }
-}
-
-.volunteer-date {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #666;
-  font-size: 0.9rem;
-  
-  i {
-    color: #1b5e20;
-  }
-}
-
-.card-content {
-  padding: 1.5rem;
-}
-
-.info-section {
-  margin-bottom: 1.5rem;
-  
-  h4 {
-    color: #1b5e20;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-  }
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
-.info-item {
-  strong {
-    display: block;
-    color: #333;
-    margin-bottom: 0.25rem;
-    font-size: 0.9rem;
-  }
-  
-  span {
-    color: #666;
-    font-size: 0.9rem;
-  }
-}
-
-.notes-section {
-  background: #fff3e0;
-  padding: 1rem;
-  border-radius: 8px;
-  border-left: 4px solid #ff9800;
-  
-  h4 {
-    color: #ff9800;
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
-  }
-  
-  p {
-    color: #666;
-    margin: 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-}
-
-.card-actions {
-  display: flex;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  border-top: 1px solid #e0e0e0;
-  background: #f8f9fa;
-}
-
-.btn-action {
-  flex: 1;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-  
-  &.approve {
-    background: #e8f5e8;
-    color: #4caf50;
-    
-    &:hover {
-      background: #4caf50;
-      color: white;
-    }
-  }
-  
-  &.reject {
-    background: #ffebee;
-    color: #f44336;
-    
-    &:hover {
-      background: #f44336;
-      color: white;
-    }
-  }
-  
-  &.view {
-    background: #e3f2fd;
-    color: #1976d2;
-    
-    &:hover {
-      background: #1976d2;
-      color: white;
-    }
-  }
-  
-  &.notes {
-    background: #fff3e0;
-    color: #ff9800;
-    
-    &:hover {
-      background: #ff9800;
-      color: white;
-    }
-  }
-}
-
-.tabs-section {
-  border-top: 1px solid #e0e0e0;
-}
-
-.tabs {
-  display: flex;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.tab {
-  flex: 1;
-  padding: 1rem 1.5rem;
-  border: none;
-  background: transparent;
-  color: #666;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-  
-  &.active {
-    background: #1b5e20;
-    color: white;
-  }
-  
-  &:hover:not(.active) {
-    background: #f8f9fa;
-    color: #1b5e20;
-  }
-}
-
-.tab-content {
-  padding: 1.5rem;
-  min-height: 200px;
-}
-
-.empty-tab {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #666;
-  
-  i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
     opacity: 0.5;
   }
-}
-
-.volunteer-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border-bottom: 1px solid #e0e0e0;
   
-  &:last-child {
-    border-bottom: none;
-  }
-  
-  &.approved {
-    .item-avatar {
-      background: #e8f5e8;
-      color: #4caf50;
-    }
-  }
-  
-  &.rejected {
-    .item-avatar {
-      background: #ffebee;
-      color: #f44336;
-    }
-  }
-}
-
-.item-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-}
-
-.item-details {
-  flex: 1;
-  
-  strong {
-    display: block;
+  h3 {
+    margin-bottom: 0.5rem;
     color: #333;
-    margin-bottom: 0.25rem;
-  }
-  
-  span {
-    display: block;
-    color: #666;
-    font-size: 0.9rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  small {
-    color: #999;
-    font-size: 0.8rem;
-  }
-}
-
-.item-actions {
-  display: flex;
-  gap: 0.5rem;
-  
-  button {
-    width: 35px;
-    height: 35px;
-    border: none;
-    border-radius: 6px;
-    background: #f5f5f5;
-    color: #666;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    
-    &:hover {
-      background: #e0e0e0;
-      color: #333;
-    }
-  }
-}
-
-.volunteers-table {
-  overflow-x: auto;
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    
-    thead {
-      background: #f8f9fa;
-      
-      th {
-        padding: 1rem;
-        text-align: left;
-        color: #333;
-        font-weight: 600;
-        border-bottom: 2px solid #e0e0e0;
-        white-space: nowrap;
-      }
-    }
-    
-    tbody {
-      tr {
-        border-bottom: 1px solid #e0e0e0;
-        
-        &:hover {
-          background: #f8f9fa;
-        }
-        
-        td {
-          padding: 1rem;
-          color: #666;
-        }
-      }
-    }
-  }
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  
-  &.pending {
-    background: #fff3e0;
-    color: #ff9800;
-  }
-  
-  &.approved {
-    background: #e8f5e8;
-    color: #4caf50;
-  }
-  
-  &.rejected {
-    background: #ffebee;
-    color: #f44336;
   }
 }
 
@@ -1346,24 +1207,17 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
   
-  .pending-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .card-actions {
-    flex-wrap: wrap;
-  }
-  
-  .btn-action {
-    min-width: calc(50% - 0.375rem);
-  }
-  
-  .tabs {
+  .date-filters {
     flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn-clear {
+    margin-left: 0;
+  }
+  
+  .action-buttons {
+    flex-wrap: wrap;
   }
 }
 </style>
