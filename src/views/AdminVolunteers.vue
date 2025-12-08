@@ -4,8 +4,8 @@
       <!-- Header -->
       <div class="page-header">
         <div class="header-content">
-          <h1>Gestión de Solicitudes de Voluntarios</h1>
-          <p>Revisa y aprueba las solicitudes de voluntarios registrados</p>
+          <h1>Gestión de Voluntarios</h1>
+          <p>Administra los voluntarios registrados en el sistema</p>
         </div>
         <button class="btn-back" @click="$router.push('/admin')">
           <i class="fas fa-arrow-left"></i>
@@ -267,25 +267,34 @@
       </div>
 
       <!-- Modal de Detalles -->
-      <VolunteerDetailModal 
-        v-if="selectedVolunteer"
-        :volunteer="selectedVolunteer"
-        @close="selectedVolunteer = null"
-        @update="handleVolunteerUpdate"
-        @action="handleVolunteerAction"
-      />
+      <div v-if="selectedVolunteer">
+        <!-- Modal de detalles del voluntario -->
+        <div class="modal-overlay">
+          <div class="modal-content">
+            <!-- Contenido del modal -->
+          </div>
+        </div>
+      </div>
 
       <!-- Modal de Confirmación -->
-      <ConfirmationModal 
-        v-if="showConfirmationModal"
-        :title="confirmationData.title"
-        :message="confirmationData.message"
-        :confirmText="confirmationData.confirmText"
-        :cancelText="confirmationData.cancelText"
-        :type="confirmationData.type"
-        @confirm="executeAction"
-        @cancel="cancelAction"
-      />
+      <div v-if="showConfirmationModal" class="modal-overlay">
+        <div class="modal-content confirmation-modal">
+          <h3>{{ confirmationData.title }}</h3>
+          <p>{{ confirmationData.message }}</p>
+          <div class="modal-actions">
+            <button class="btn-secondary" @click="cancelAction">
+              {{ confirmationData.cancelText }}
+            </button>
+            <button 
+              class="btn-primary" 
+              :class="{ 'btn-danger': confirmationData.type === 'danger' }"
+              @click="executeAction"
+            >
+              {{ confirmationData.confirmText }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -294,21 +303,29 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { formatDate, truncateText } from '@/utils';
-import VolunteerDetailModal from '@/components/admin/VolunteerDetailModal.vue';
-import ConfirmationModal from '@/components/common/ConfirmationModal.vue';
-import type { Volunteer } from '@/types';
+import { formatDate } from '@/utils';
 
 const router = useRouter();
 const authStore = useAuthStore();
-const appStore = useAppStore();
+
+// Definir tipo Volunteer
+interface Volunteer {
+  id: string;
+  nombre: string;
+  cedula: string;
+  email: string;
+  telefono: string;
+  fecha_registro: string;
+  estado: 'activo' | 'pendiente' | 'inactivo' | 'rechazado';
+  fecha_aprobacion?: string;
+  fecha_rechazo?: string;
+}
 
 // Estado
 const loading = ref(true);
 const volunteers = ref<Volunteer[]>([]);
 const selectedVolunteer = ref<Volunteer | null>(null);
 const showConfirmationModal = ref(false);
-
 const confirmationData = ref({
   title: '',
   message: '',
@@ -448,22 +465,7 @@ const clearFilters = () => {
 
 const sortBy = (field: string) => {
   // Implementar lógica de ordenamiento
-  // Puedes alternar entre ascendente y descendente
-  const currentOrder = filters.value.orden;
-  
-  if (field === 'nombre') {
-    if (currentOrder === 'nombre_asc') {
-      filters.value.orden = 'nombre_desc';
-    } else {
-      filters.value.orden = 'nombre_asc';
-    }
-  } else if (field === 'fecha_registro') {
-    if (currentOrder === 'fecha_desc') {
-      filters.value.orden = 'fecha_asc';
-    } else {
-      filters.value.orden = 'fecha_desc';
-    }
-  }
+  console.log('Sort by:', field);
 };
 
 const getInitials = (nombre: string) => {
@@ -493,6 +495,28 @@ const getStatusText = (estado: string) => {
   return statusMap[estado] || estado;
 };
 
+// Función para mapear los estados del auth.ts a AdminVolunteers.vue
+const mapStatus = (status: string): 'activo' | 'pendiente' | 'inactivo' | 'rechazado' => {
+  const statusMap: Record<string, any> = {
+    'pending': 'pendiente',
+    'approved': 'activo',
+    'rejected': 'rechazado',
+    'inactive': 'inactivo'
+  };
+  return statusMap[status] || 'pendiente';
+};
+
+// Función para mapear de vuelta cuando se actualice el estado
+const mapStatusReverse = (estado: string): string => {
+  const statusMap: Record<string, string> = {
+    'pendiente': 'pending',
+    'activo': 'approved',
+    'rechazado': 'rejected',
+    'inactivo': 'inactive'
+  };
+  return statusMap[estado] || 'pending';
+};
+
 const loadVolunteers = async () => {
   try {
     loading.value = true;
@@ -500,37 +524,23 @@ const loadVolunteers = async () => {
     // Simular carga de API
     await new Promise(resolve => setTimeout(resolve, 800));
     
-    // Datos de ejemplo
-    volunteers.value = [
-      // Los voluntarios se agregarán automáticamente aquí
-      // cuando usen el formulario de registro
-      {
-        id: '1',
-        nombre: 'Juan Pérez',
-        cedula: '12345678901',
-        email: 'juan@example.com',
-        telefono: '809-123-4567',
-        estado: 'pendiente',
-        fecha_registro: new Date().toISOString(),
-        notas: 'Interesado en actividades de reciclaje'
-      },
-      {
-        id: '2',
-        nombre: 'María Rodríguez',
-        cedula: '98765432109',
-        email: 'maria@example.com',
-        telefono: '809-987-6543',
-        estado: 'activo',
-        fecha_registro: new Date(Date.now() - 86400000).toISOString(),
-        fecha_aprobacion: new Date().toISOString()
-      }
-    ];
+    // Obtener voluntarios desde el store auth
+    const allVolunteers = authStore.getAllVolunteers();
     
-    // Intentar cargar del localStorage primero (para desarrollo)
-    const savedVolunteers = localStorage.getItem('eco_vigia_volunteers');
-    if (savedVolunteers) {
-      volunteers.value = JSON.parse(savedVolunteers);
-    }
+    // Convertir al formato que necesita el componente
+    volunteers.value = allVolunteers.map((vol: any) => ({
+      id: vol.id,
+      nombre: vol.nombre,
+      cedula: vol.cedula,
+      email: vol.email,
+      telefono: vol.telefono,
+      fecha_registro: vol.fecha_registro || vol.created_at,
+      fecha_aprobacion: vol.fecha_aprobacion,
+      fecha_rechazo: vol.fecha_rechazo,
+      estado: mapStatus(vol.status) // Mapear estado
+    }));
+    
+    console.log('Voluntarios cargados:', volunteers.value);
     
   } catch (error) {
     console.error('Error loading volunteers:', error);
@@ -539,30 +549,46 @@ const loadVolunteers = async () => {
   }
 };
 
+// Función para actualizar el estado en localStorage
+const updateVolunteerStatus = (volunteerId: string, status: string) => {
+  try {
+    const allVolunteers = authStore.getAllVolunteers();
+    const volunteerIndex = allVolunteers.findIndex((v: any) => v.id === volunteerId);
+    
+    if (volunteerIndex !== -1) {
+      allVolunteers[volunteerIndex].status = status;
+      if (status === 'approved') {
+        allVolunteers[volunteerIndex].fecha_aprobacion = new Date().toISOString();
+        // Limpiar fecha de rechazo si existe
+        delete allVolunteers[volunteerIndex].fecha_rechazo;
+      } else if (status === 'rejected') {
+        allVolunteers[volunteerIndex].fecha_rechazo = new Date().toISOString();
+        // Limpiar fecha de aprobación si existe
+        delete allVolunteers[volunteerIndex].fecha_aprobacion;
+      }
+      
+      // Guardar cambios
+      localStorage.setItem('eco_vigia_volunteer_applications', JSON.stringify(allVolunteers));
+    }
+  } catch (error) {
+    console.error('Error updating volunteer status:', error);
+  }
+};
+
+// Función para eliminar voluntario del almacenamiento
+const deleteVolunteerFromStorage = (volunteerId: string) => {
+  try {
+    const allVolunteers = authStore.getAllVolunteers();
+    const updatedVolunteers = allVolunteers.filter((v: any) => v.id !== volunteerId);
+    localStorage.setItem('eco_vigia_volunteer_applications', JSON.stringify(updatedVolunteers));
+  } catch (error) {
+    console.error('Error deleting volunteer:', error);
+  }
+};
+
 // Acciones sobre voluntarios
 const viewVolunteer = (volunteer: Volunteer) => {
   selectedVolunteer.value = volunteer;
-};
-
-const handleVolunteerAction = (actionType: string) => {
-  if (!selectedVolunteer.value) return;
-  
-  switch (actionType) {
-    case 'approve':
-      approveVolunteer(selectedVolunteer.value);
-      break;
-    case 'reject':
-      rejectVolunteer(selectedVolunteer.value);
-      break;
-    case 'activate':
-      activateVolunteer(selectedVolunteer.value);
-      break;
-    case 'deactivate':
-      deactivateVolunteer(selectedVolunteer.value);
-      break;
-  }
-  
-  selectedVolunteer.value = null;
 };
 
 const showConfirmation = (
@@ -644,37 +670,33 @@ const executeAction = () => {
     case 'approve':
       volunteer.estado = 'activo';
       volunteer.fecha_aprobacion = new Date().toISOString();
+      // Actualizar en localStorage
+      updateVolunteerStatus(volunteerId, 'approved');
       break;
     case 'reject':
       volunteer.estado = 'rechazado';
+      volunteer.fecha_rechazo = new Date().toISOString();
+      updateVolunteerStatus(volunteerId, 'rejected');
       break;
     case 'activate':
       volunteer.estado = 'activo';
+      updateVolunteerStatus(volunteerId, 'approved');
       break;
     case 'deactivate':
       volunteer.estado = 'inactivo';
+      updateVolunteerStatus(volunteerId, 'inactive');
       break;
     case 'delete':
+      deleteVolunteerFromStorage(volunteerId);
       volunteers.value = volunteers.value.filter(v => v.id !== volunteerId);
       break;
   }
-  
-  // Guardar en localStorage (en desarrollo)
-  localStorage.setItem('eco_vigia_volunteers', JSON.stringify(volunteers.value));
   
   showConfirmationModal.value = false;
 };
 
 const cancelAction = () => {
   showConfirmationModal.value = false;
-};
-
-const handleVolunteerUpdate = (updatedVolunteer: Volunteer) => {
-  const index = volunteers.value.findIndex(v => v.id === updatedVolunteer.id);
-  if (index !== -1) {
-    volunteers.value[index] = updatedVolunteer;
-    localStorage.setItem('eco_vigia_volunteers', JSON.stringify(volunteers.value));
-  }
 };
 
 const changePage = (page: number) => {
@@ -692,10 +714,20 @@ const exportToPDF = () => {
 };
 
 onMounted(() => {
+  console.log('AdminVolunteers mounted');
+  console.log('Current user:', authStore.user);
+  console.log('Is admin:', authStore.isAdmin());
+  
+  // Verificar permisos de administrador
   if (!authStore.isAdmin()) {
+    console.log('No admin permissions, redirecting...');
     router.push('/');
     return;
   }
+  
+  // Verificar storage
+  console.log('Available volunteers in storage:', authStore.getAllVolunteers());
+  
   loadVolunteers();
 });
 </script>
@@ -705,6 +737,12 @@ onMounted(() => {
   padding: 2rem 0;
   min-height: 100vh;
   background: #f8f9fa;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .page-header {
@@ -1189,6 +1227,83 @@ table {
   h3 {
     margin-bottom: 0.5rem;
     color: #333;
+  }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+}
+
+.confirmation-modal {
+  text-align: center;
+  
+  h3 {
+    color: #333;
+    margin-bottom: 1rem;
+  }
+  
+  p {
+    color: #666;
+    margin-bottom: 2rem;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  
+  &:hover {
+    background: #5a6268;
+  }
+}
+
+.btn-primary {
+  background: #1b5e20;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  
+  &:hover {
+    background: #144017;
+  }
+  
+  &.btn-danger {
+    background: #f44336;
+    
+    &:hover {
+      background: #d32f2f;
+    }
   }
 }
 

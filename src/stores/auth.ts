@@ -39,6 +39,12 @@ export const useAuthStore = defineStore('auth', () => {
     return volunteers.filter((v: any) => v.status === 'approved');
   };
 
+  // Obtener voluntarios pendientes
+  const getPendingVolunteers = () => {
+    const allVolunteers = getAllVolunteers();
+    return allVolunteers.filter((v: any) => v.status === 'pending');
+  };
+
   // Verificar si un voluntario está aprobado
   const isVolunteerApproved = (email: string) => {
     const approvedVolunteers = getApprovedVolunteers();
@@ -263,7 +269,10 @@ export const useAuthStore = defineStore('auth', () => {
     isVolunteer,
     isVolunteerApproved,
     isEmailRegistered,
+    
+    // Volunteer data functions
     getApprovedVolunteers,
+    getPendingVolunteers, // ✅ Agregada aquí
     getAllVolunteers,
     
     // Session management
