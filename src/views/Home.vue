@@ -142,7 +142,8 @@
             </router-link>
           </div>
           <div class="emergency-image">
-          <img :src="emergencyReport" alt="Reportar Daño" />          </div>
+          <img :src="emergencyReport" alt="Reportar Daño" />          
+          </div>
         </div>
       </div>
     </section>
@@ -154,8 +155,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { formatDate } from '@/utils';
 import type { News, ProtectedArea } from '@/types';
-import emergencyReport from '@/assets/images/emergency-report.png'
-
+const emergencyReport = new URL('@/assets/images/emergency-report.png', import.meta.url).href
 
 const router = useRouter();
 const featuresSection = ref<HTMLElement>();

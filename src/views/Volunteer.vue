@@ -16,7 +16,45 @@
             <li>Disponibilidad de tiempo</li>
             <li>Actitud positiva y proactiva</li>
           </ul>
+          
+          <div class="process-info">
+            <h3>Proceso de Aprobación</h3>
+            <div class="process-steps">
+              <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                  <strong>Envía tu solicitud</strong>
+                  <p>Completa el formulario de registro</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                  <strong>Revisión del administrador</strong>
+                  <p>Verificaremos tu información</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                  <strong>Notificación por correo</strong>
+                  <p>Te informaremos el resultado</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                  <strong>Acceso a la plataforma</strong>
+                  <p>Podrás iniciar sesión si eres aprobado</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <button type="button" @click="debugLocalStorage" style="margin-top: 10px;">
+  Debug Storage
+</button>
 
         <form @submit.prevent="submitApplication" class="volunteer-form">
           <h2>Solicitud de Voluntariado</h2>
@@ -28,8 +66,11 @@
               v-model="form.cedula"
               type="text"
               required
-              placeholder="Ingresa tu cédula"
+              placeholder="Ej: 00112345678"
+              :class="{ error: errors.cedula }"
             />
+            <span v-if="errors.cedula" class="error-message">{{ errors.cedula }}</span>
+            <small class="help-text">11 dígitos sin guiones</small>
           </div>
 
           <div class="form-group">
@@ -39,8 +80,10 @@
               v-model="form.nombre"
               type="text"
               required
-              placeholder="Ingresa tu nombre completo"
+              placeholder="Ej: Juan Pérez García"
+              :class="{ error: errors.nombre }"
             />
+            <span v-if="errors.nombre" class="error-message">{{ errors.nombre }}</span>
           </div>
 
           <div class="form-group">
@@ -50,19 +93,29 @@
               v-model="form.email"
               type="email"
               required
-              placeholder="Ingresa tu correo"
+              placeholder="ejemplo@correo.com"
+              :class="{ error: errors.email }"
             />
+            <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
           </div>
 
           <div class="form-group">
             <label for="password">Contraseña *</label>
-            <input
-              id="password"
-              v-model="form.password"
-              type="password"
-              required
-              placeholder="Crea una contraseña"
-            />
+            <div class="password-input">
+              <input
+                id="password"
+                v-model="form.password"
+                :type="showPassword ? 'text' : 'password'"
+                required
+                placeholder="Mínimo 8 caracteres con mayúsculas, minúsculas y números"
+                :class="{ error: errors.password }"
+              />
+              <button type="button" class="toggle-password" @click="togglePassword">
+                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
+            <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
+            <small class="help-text">Debe incluir mayúsculas, minúsculas y números</small>
           </div>
 
           <div class="form-group">
@@ -72,11 +125,23 @@
               v-model="form.telefono"
               type="tel"
               required
-              placeholder="Ingresa tu teléfono"
+              placeholder="Ej: 8095551234"
+              :class="{ error: errors.telefono }"
             />
+            <span v-if="errors.telefono" class="error-message">{{ errors.telefono }}</span>
+          </div>
+
+          <div class="form-terms">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="form.acceptTerms" :class="{ error: !form.acceptTerms && termsError }" />
+              <span class="checkmark"></span>
+              Acepto los <a href="#" @click.prevent="showTerms">términos y condiciones</a> del voluntariado
+            </label>
+            <span v-if="termsError" class="error-message">Debes aceptar los términos y condiciones</span>
           </div>
 
           <button type="submit" :disabled="loading" class="submit-btn">
+            <i v-if="loading" class="fas fa-spinner fa-spin"></i>
             {{ loading ? 'Enviando...' : 'Enviar Solicitud' }}
           </button>
         </form>
@@ -86,18 +151,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
-import { medioAmbienteAPI } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
+import { useAppStore } from '@/stores/app';
+import { volunteerValidator } from '@/utils/validators';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const appStore = useAppStore();
 
 const loading = ref(false);
-const useRealAPI = ref(true);
+const showPassword = ref(false);
+const termsError = ref(false);
 
-const form = ref({
+const form = reactive({
+  cedula: '',
+  nombre: '',
+  email: '',
+  password: '',
+  telefono: '',
+  acceptTerms: false
+});
+
+const errors = reactive({
   cedula: '',
   nombre: '',
   email: '',
@@ -105,60 +182,109 @@ const form = ref({
   telefono: ''
 });
 
-const submitApplication = async () => {
-  loading.value = true;
-  
-  try {
-    // Verificar si el email ya está registrado
-    if (authStore.isEmailRegistered(form.value.email)) {
-      alert('❌ Este correo electrónico ya está registrado. Si ya eres voluntario, inicia sesión en la sección correspondiente.');
-      loading.value = false;
-      return;
-    }
+const validateForm = (): boolean => {
+  // Reset errors
+  Object.keys(errors).forEach(key => {
+    errors[key as keyof typeof errors] = '';
+  });
+  termsError.value = false;
 
-    // Generar ID único y preparar datos
-    const volunteerData = {
-      id: Date.now(),
-      ...form.value,
-      fecha: new Date().toISOString(),
-      status: 'pending'
-    };
+  // Validar términos
+  if (!form.acceptTerms) {
+    termsError.value = true;
+    return false;
+  }
 
-    // Intentar con API real si está habilitada
-    if (useRealAPI.value) {
-      try {
-        await medioAmbienteAPI.solicitarVoluntariado(form.value);
-        console.log('✅ Solicitud enviada al Ministerio');
-      } catch (apiError) {
-        console.warn('⚠️ API no disponible, usando almacenamiento local');
+  // Usar el validator
+  const validation = volunteerValidator(form);
+  if (!validation.valid) {
+    validation.errors.forEach(error => {
+      // Extraer el campo del error
+      if (error.includes('cédula')) errors.cedula = error;
+      else if (error.includes('nombre')) errors.nombre = error;
+      else if (error.includes('correo')) errors.email = error;
+      else if (error.includes('contraseña')) errors.password = error;
+      else if (error.includes('teléfono')) errors.telefono = error;
+      else {
+        // Error genérico
+        appStore.addNotification({
+          message: error,
+          type: 'error'
+        });
       }
-    }
+    });
+    return false;
+  }
 
-    // Guardar en localStorage como respaldo
-    const existingApplications = JSON.parse(localStorage.getItem('eco_vigia_volunteer_applications') || '[]');
-    existingApplications.push(volunteerData);
-    localStorage.setItem('eco_vigia_volunteer_applications', JSON.stringify(existingApplications));
+  return true;
+};
 
-    alert('✅ ¡Solicitud enviada exitosamente! Un administrador revisará tu solicitud y te notificará cuando sea aprobada.');
+const togglePassword = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const showTerms = () => {
+  alert('Términos y Condiciones del Voluntariado\n\n' +
+        '1. El voluntario se compromete a respetar las normas del Ministerio de Medio Ambiente.\n' +
+        '2. La información proporcionada debe ser verídica y actualizada.\n' +
+        '3. El voluntario debe mantener conducta apropiada durante las actividades.\n' +
+        '4. El Ministerio se reserva el derecho de aprobar o rechazar solicitudes.\n' +
+        '5. Los voluntarios aprobados recibirán capacitación y supervisión.');
+};
+
+const submitApplication = async () => {
+  if (!validateForm()) {
+    return;
+  }
+
+  loading.value = true;
+
+  try {
+    // Registrar voluntario
+    const result = authStore.registerVolunteer(form);
     
-    // Limpiar formulario
-    form.value = {
-      cedula: '',
-      nombre: '',
-      email: '',
-      password: '',
-      telefono: ''
-    };
-
-    // Redirigir al inicio
-    router.push('/');
+    if (result.success) {
+      // Limpiar formulario
+      Object.keys(form).forEach(key => {
+        if (key !== 'acceptTerms') {
+          (form as any)[key] = '';
+        }
+      });
+      form.acceptTerms = false;
+      
+      // Mostrar notificación
+      appStore.addNotification({
+        message: result.message + '. Un administrador revisará tu solicitud pronto.',
+        type: 'success'
+      });
+      
+      // Redirigir después de 2 segundos
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+      
+    } else {
+      appStore.addNotification({
+        message: result.message,
+        type: 'error'
+      });
+    }
     
   } catch (error) {
-    console.error('Error submitting application:', error);
-    alert('❌ Error al enviar la solicitud. Por favor intenta nuevamente.');
+    console.error('Error en solicitud de voluntariado:', error);
+    appStore.addNotification({
+      message: 'Error al procesar la solicitud. Por favor intenta nuevamente.',
+      type: 'error'
+    });
   } finally {
     loading.value = false;
   }
+};
+
+const debugLocalStorage = () => {
+  const volunteers = localStorage.getItem('eco_vigia_volunteer_applications');
+  console.log('LocalStorage volunteers:', volunteers ? JSON.parse(volunteers) : 'Empty');
+  console.log('Form data:', form);
 };
 </script>
 
@@ -174,6 +300,7 @@ const submitApplication = async () => {
   h1 {
     color: #1b5e20;
     margin-bottom: 1rem;
+    font-size: 2.5rem;
   }
   
   p {
@@ -194,11 +321,13 @@ const submitApplication = async () => {
   h2 {
     color: #1b5e20;
     margin-bottom: 1.5rem;
+    font-size: 1.5rem;
   }
   
   .requirements-list {
     list-style: none;
     padding: 0;
+    margin-bottom: 2rem;
     
     li {
       padding: 0.75rem 1rem;
@@ -210,16 +339,64 @@ const submitApplication = async () => {
   }
 }
 
+.process-info {
+  h3 {
+    color: #1b5e20;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+  }
+}
+
+.process-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  
+  .step-number {
+    width: 30px;
+    height: 30px;
+    background: #1b5e20;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+  
+  .step-content {
+    strong {
+      display: block;
+      color: #333;
+      margin-bottom: 0.25rem;
+    }
+    
+    p {
+      color: #666;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
 .volunteer-form {
   background: white;
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
   
   h2 {
     color: #1b5e20;
     margin-bottom: 2rem;
     text-align: center;
+    font-size: 1.5rem;
   }
 }
 
@@ -245,12 +422,110 @@ const submitApplication = async () => {
       outline: none;
       border-color: #1b5e20;
     }
+    
+    &.error {
+      border-color: #f44336;
+    }
+  }
+  
+  .password-input {
+    position: relative;
+    
+    input {
+      padding-right: 3rem;
+    }
+    
+    .toggle-password {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      padding: 0.25rem;
+      
+      &:hover {
+        color: #333;
+      }
+    }
+  }
+  
+  .error-message {
+    color: #f44336;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: block;
+  }
+  
+  .help-text {
+    color: #666;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    display: block;
+  }
+}
+
+.form-terms {
+  margin: 2rem 0;
+  
+  .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: #666;
+    font-size: 0.9rem;
+    
+    input {
+      display: none;
+      
+      &.error + .checkmark {
+        border-color: #f44336;
+      }
+    }
+    
+    .checkmark {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 4px;
+      position: relative;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    
+    input:checked + .checkmark {
+      background: #1b5e20;
+      border-color: #1b5e20;
+      
+      &::after {
+        content: '✓';
+        position: absolute;
+        color: white;
+        font-size: 12px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+    }
+    
+    a {
+      color: #1b5e20;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 }
 
 .submit-btn {
   width: 100%;
-  background: #2e7d32;
+  background: #1b5e20;
   color: white;
   border: none;
   padding: 1rem;
@@ -259,9 +534,13 @@ const submitApplication = async () => {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   
   &:hover:not(:disabled) {
-    background: #1b5e20;
+    background: #144017;
   }
   
   &:disabled {
@@ -274,6 +553,10 @@ const submitApplication = async () => {
   .volunteer-content {
     grid-template-columns: 1fr;
     gap: 2rem;
+  }
+  
+  .volunteer-form {
+    padding: 1.5rem;
   }
 }
 </style>
