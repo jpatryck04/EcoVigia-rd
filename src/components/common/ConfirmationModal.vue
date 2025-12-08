@@ -1,6 +1,6 @@
 <template>
   <div class="modal-overlay" @click.self="emitClose">
-    <div class="modal-content" @click.stop>
+    <div class="modal-content">
       <div class="modal-header" :class="type">
         <i :class="getIcon()"></i>
         <h3>{{ title }}</h3>
