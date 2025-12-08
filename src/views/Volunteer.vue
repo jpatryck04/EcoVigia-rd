@@ -52,10 +52,6 @@
           </div>
         </div>
 
-        <button type="button" @click="debugLocalStorage" style="margin-top: 10px;">
-  Debug Storage
-</button>
-
         <form @submit.prevent="submitApplication" class="volunteer-form">
           <h2>Solicitud de Voluntariado</h2>
           
@@ -156,6 +152,25 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { volunteerValidator } from '@/utils/validators';
+import { onMounted } from 'vue';
+
+onMounted(() => {
+  console.log('Volunteer page mounted');
+  debugStorage();
+});
+
+const debugStorage = () => {
+  console.log('=== DEBUG LOCALSTORAGE ===');
+  const volunteers = localStorage.getItem('eco_vigia_volunteer_applications');
+  console.log('Volunteers in storage:', volunteers ? JSON.parse(volunteers) : 'Empty');
+  
+  // Verificar si el store está funcionando
+  console.log('Auth store methods:', {
+    isEmailRegistered: authStore.isEmailRegistered('test@test.com'),
+    getAllVolunteers: authStore.getAllVolunteers?.() || 'Method not found'
+  });
+};
+
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -232,18 +247,31 @@ const showTerms = () => {
         '5. Los voluntarios aprobados recibirán capacitación y supervisión.');
 };
 
+// Modifica submitApplication para más logging
 const submitApplication = async () => {
+  console.log('=== SUBMIT START ===');
+  console.log('Form data:', form);
+  
   if (!validateForm()) {
+    console.log('Form validation failed');
     return;
   }
 
   loading.value = true;
 
   try {
-    // Registrar voluntario
+    console.log('Calling registerVolunteer...');
+    
+    // Llamar al store
     const result = authStore.registerVolunteer(form);
+    console.log('Register result:', result);
     
     if (result.success) {
+      console.log('Registration successful');
+      
+      // Verificar si se guardó
+      debugStorage();
+      
       // Limpiar formulario
       Object.keys(form).forEach(key => {
         if (key !== 'acceptTerms') {
@@ -264,6 +292,7 @@ const submitApplication = async () => {
       }, 2000);
       
     } else {
+      console.log('Registration failed:', result.message);
       appStore.addNotification({
         message: result.message,
         type: 'error'
@@ -271,21 +300,17 @@ const submitApplication = async () => {
     }
     
   } catch (error) {
-    console.error('Error en solicitud de voluntariado:', error);
+    console.error('Error in submitApplication:', error);
     appStore.addNotification({
       message: 'Error al procesar la solicitud. Por favor intenta nuevamente.',
       type: 'error'
     });
   } finally {
     loading.value = false;
+    console.log('=== SUBMIT END ===');
   }
 };
 
-const debugLocalStorage = () => {
-  const volunteers = localStorage.getItem('eco_vigia_volunteer_applications');
-  console.log('LocalStorage volunteers:', volunteers ? JSON.parse(volunteers) : 'Empty');
-  console.log('Form data:', form);
-};
 </script>
 
 <style scoped lang="scss">
