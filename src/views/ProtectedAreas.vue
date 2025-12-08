@@ -141,36 +141,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAreasStore } from '@/stores/areas'; // <-- IMPORTAR STORE
 import AreaDetailsModal from '@/components/AreaDetailsModal.vue';
 import type { ProtectedArea } from '@/types';
 
-// Importar todas las imágenes desde src/assets
-import losHaitisesImg from '@/assets/areas/los-haitises.png';
-import ebanoVerdeImg from '@/assets/areas/ebano-verde.png';
-import jaraguaImg from '@/assets/areas/jaragua.png';
-import bermudezImg from '@/assets/areas/bermudez.png';
-import parqueEsteImg from '@/assets/areas/parque-este.png';
-import damajaguaImg from '@/assets/areas/damajagua.png';
-import cuevasBorbonImg from '@/assets/areas/cuevas-boborn.png';
-import parqueCaletaImg from '@/assets/areas/parque-caleta.png';
-import manglaresYunaImg from '@/assets/areas/manglares-yuna.png';
-import bahorucoImg from '@/assets/areas/bahoruco.png';
-
-// Imágenes del carrusel
-import carruselHaitises from '@/assets/carrusel/los-haitises.png';
-import carruselEbanoVerde from '@/assets/carrusel/ebano-verde.png';
-import carruselJaragua from '@/assets/carrusel/jaragua.png';
-import carruselBermudez from '@/assets/carrusel/bermudez.png';
-import carruselParqueEste from '@/assets/carrusel/parque-este.png';
-import carruselDamajagua from '@/assets/carrusel/damajagua.png';
-import carruselCuevasBorbon from '@/assets/carrusel/cuevas-boborn.png';
-import carruselParqueCaleta from '@/assets/carrusel/parque-caleta.png';
-import carruselManglaresYuna from '@/assets/carrusel/manglares-yuna.png';
-import carruselBahoruco from '@/assets/carrusel/bahoruco.png';
-
 const router = useRouter();
+const areasStore = useAreasStore(); // <-- USAR STORE
 
-const areas = ref<ProtectedArea[]>([]);
+// Usar áreas desde el store en lugar de datos fijos
+const areas = computed(() => areasStore.areas); // <-- CAMBIAR ESTO
+
 const searchQuery = ref('');
 const selectedType = ref('');
 const selectedArea = ref<ProtectedArea | null>(null);
@@ -179,70 +159,6 @@ const currentSlide = ref(0);
 const autoPlayInterval = ref<number | null>(null);
 const areasSection = ref<HTMLElement | null>(null);
 const highlightedArea = ref<number | null>(null);
-
-// Datos del carrusel - AHORA CON IMPORTACIONES DESDE ASSETS
-const carouselSlides = ref([
-  {
-    image: carruselHaitises,
-    title: 'Parque Nacional Los Haitises',
-    description: 'Un ecosistema diverso con mogotes, manglares y fauna endémica',
-    areaId: 1
-  },
-  {
-    image: carruselEbanoVerde,
-    title: 'Reserva Científica Ébano Verde',
-    description: 'Bosque nublado esencial para la conservación y la investigación',
-    areaId: 2
-  },
-  {
-    image: carruselJaragua,
-    title: 'Parque Nacional Jaragua',
-    description: 'Ecosistemas marinos y terrestres con flamencos y tortugas marinas',
-    areaId: 3
-  },
-  {
-    image: carruselBermudez,
-    title: 'Parque Nacional Armando Bermúdez',
-    description: 'Paisajes montañosos que conducen al Pico Duarte',
-    areaId: 4
-  },
-  {
-    image: carruselParqueEste,
-    title: 'Parque Nacional del Este',
-    description: 'Bosques, playas y una biodiversidad marina de alta importancia',
-    areaId: 5
-  },
-  {
-    image: carruselDamajagua,
-    title: 'Monumento Natural Saltos de la Damajagua',
-    description: 'Cascadas y formaciones rocosas ideales para ecoturismo',
-    areaId: 6
-  },
-  {
-    image: carruselCuevasBorbon,
-    title: 'Reserva Antropológica Cuevas de Borbón',
-    description: 'Arte rupestre taíno y formaciones geológicas únicas',
-    areaId: 7
-  },
-  {
-    image: carruselParqueCaleta,
-    title: 'Parque Nacional Submarino La Caleta',
-    description: 'Ecosistema marino con arrecifes de coral y un pecio histórico',
-    areaId: 8
-  },
-  {
-    image: carruselManglaresYuna,
-    title: 'Parque Nacional Manglares del Bajo Yuna',
-    description: 'Humedal crucial para aves acuáticas y especies marino-costeras',
-    areaId: 9
-  },
-  {
-    image: carruselBahoruco,
-    title: 'Parque Nacional Sierra de Bahoruco',
-    description: 'Hotspot de biodiversidad con ecosistemas variados y especies endémicas',
-    areaId: 10
-  }
-]);
 
 const areaTypes = [
   { value: 'Parque Nacional', label: 'Parque Nacional' },
@@ -253,6 +169,16 @@ const areaTypes = [
   { value: 'Refugio de Vida Silvestre', label: 'Refugio de Vida Silvestre' },
   { value: 'Parque Nacional Submarino', label: 'Parque Nacional Submarino' } 
 ];
+
+// Carrusel dinámico basado en las áreas existentes
+const carouselSlides = computed(() => {
+  return areasStore.areas.slice(0, 10).map(area => ({
+    image: area.imagen,
+    title: area.nombre,
+    description: area.descripcion.substring(0, 100) + '...',
+    areaId: area.id
+  }));
+});
 
 const filteredAreas = computed(() => {
   let filtered = areas.value;
@@ -344,180 +270,7 @@ const viewOnMap = (area: ProtectedArea) => {
 
 onMounted(async () => {
   try {
-    // DATOS COMPLETOS DE LAS 10 ÁREAS PROTEGIDAS - AHORA CON IMPORTACIONES
-    areas.value = [
-      {
-        id: 1,
-        nombre: 'Parque Nacional Los Haitises',
-        descripcion: 'Una de las áreas protegidas más importantes y biodiversas de República Dominicana, caracterizada por sus impresionantes mogotes (colinas cársticas), densos bosques de manglares y numerosas cuevas con pictografías taínas. Este parque alberga más de 700 especies de plantas, incluyendo orquídeas endémicas, y es hogar de especies emblemáticas como el solenodón y la jutía. Sus bahías y cayos constituyen un ecosistema único en el Caribe que sirve como refugio para aves migratorias y residentes.',
-        latitud: 19.0333,
-        longitud: -69.5833,
-        imagen: losHaitisesImg, // ← USANDO IMPORT
-        ubicacion: 'Región Nordeste',
-        extension: '1,600 km²',
-        tipo: 'Parque Nacional',
-        flora: ['Caoba', 'Ceiba', 'Helechos arborescentes', 'Orquídeas endémicas', 'Mangles rojos'],
-        fauna: ['Solendón', 'Jutía', 'Manatí antillano', 'Peregrino', 'Cotorra de La Hispaniola'],
-        actividades: ['Observación de aves', 'Paseos en bote', 'Senderismo', 'Exploración de cuevas'],
-        clima: 'Tropical húmedo',
-        horario: '8:00 AM - 5:00 PM',
-        contacto: '(809) 555-0123'
-      },
-      {
-        id: 2,
-        nombre: 'Reserva Científica Ébano Verde',
-        descripcion: 'Situada en la Cordillera Central, esta reserva protege una de las últimas poblaciones del ébano verde, árbol endémico en peligro de extinción. El bosque nublado presenta una biodiversidad excepcional con numerosas especies de orquídeas, bromelias y helechos. La reserva funciona como una esponja natural que captura la humedad de las nubes, alimentando importantes ríos como el Camú y el Yaque del Norte. Su ecosistema es vital para la investigación científica y la conservación de especies únicas de la isla.',
-        latitud: 19.1167,
-        longitud: -70.5333,
-        imagen: ebanoVerdeImg, // ← USANDO IMPORT
-        ubicacion: 'Cordillera Central',
-        extension: '290 km²',
-        tipo: 'Reserva Científica',
-        flora: ['Ébano verde', 'Pinos criollos', 'Orquídeas endémicas', 'Bromelias', 'Helechos arborescentes'],
-        fauna: ['Cotorra de La Hispaniola', 'Carpintero de sierra', 'Anfibios endémicos', 'Mariposas unique'],
-        actividades: ['Investigación científica', 'Senderismo especializado', 'Observación de flora'],
-        clima: 'Templado de montaña',
-        horario: 'Solo con permiso especial',
-        contacto: '(809) 555-0124'
-      },
-      {
-        id: 3,
-        nombre: 'Parque Nacional Jaragua',
-        descripcion: 'Considerado el parque nacional más grande del Caribe, Jaragua abarca ecosistemas terrestres y marinos de extraordinaria importancia. Incluye la laguna de Oviedo, con su población de flamencos rosados, playas de anidación de tortugas marinas y la isla Beata con sus formaciones coralinas. El parque protege importantes sitios arqueológicos taínos y presenta una vegetación adaptada a condiciones semiáridas, incluyendo cactus gigantes y bosques secos. Sus aguas cristalinas albergan arrecifes de coral entre los más saludables del Caribe.',
-        latitud: 17.8000,
-        longitud: -71.2833,
-        imagen: jaraguaImg, // ← USANDO IMPORT
-        ubicacion: 'Península de Barahona',
-        extension: '1,374 km²',
-        tipo: 'Parque Nacional',
-        flora: ['Cactus gigante', 'Guayacán', 'Bayahonda', 'Orquídeas del desierto'],
-        fauna: ['Flamenco rosado', 'Tortugas marinas', 'Iguanas rinoceronte', 'Manatíes'],
-        actividades: ['Observación de flamencos', 'Buceo', 'Snorkeling', 'Avistamiento de tortugas'],
-        clima: 'Semiárido',
-        horario: '7:00 AM - 6:00 PM',
-        contacto: '(809) 555-0125'
-      },
-      {
-        id: 4,
-        nombre: 'Parque Nacional Armando Bermúdez',
-        descripcion: 'Ubicado en el corazón de la Cordillera Central, este parque protege las cuencas altas de los principales ríos del país y alberga el Pico Duarte, la montaña más alta del Caribe. Sus bosques de pinos criollos y latifoliados presentan una biodiversidad única con especies adaptadas a las altas elevaciones. El parque es fundamental para la regulación hídrica del país y ofrece espectaculares paisajes de montaña, cascadas y valles profundos. Durante el invierno, las temperaturas pueden descender bajo cero en las cumbres más altas.',
-        latitud: 19.0333,
-        longitud: -70.9833,
-        imagen: bermudezImg, // ← USANDO IMPORT
-        ubicacion: 'Cordillera Central',
-        extension: '766 km²',
-        tipo: 'Parque Nacional',
-        flora: ['Pino criollo', 'Sabina', 'Palma de montaña', 'Helechos', 'Líquenes'],
-        fauna: ['Cotorra de La Hispaniola', 'Carpintero', 'Jilguero', 'Anfibios endémicos'],
-        actividades: ['Escalada de montañas', 'Senderismo', 'Camping', 'Observación de aves'],
-        clima: 'Alpino tropical',
-        horario: '6:00 AM - 5:00 PM',
-        contacto: '(809) 555-0126'
-      },
-      {
-        id: 5,
-        nombre: 'Parque Nacional del Este',
-        descripcion: 'Este importante parque costero-marino protege ecosistemas únicos que incluyen bosques secos, playas de anidación de tortugas, arrecifes de coral y la famosa Isla Saona. El parque alberga importantes poblaciones de aves marinas y terrestres, así como sitios arqueológicos taínos de gran valor cultural. Sus aguas cristalinas son hogar de delfines, manatíes y numerosas especies de peces tropicales. La variedad de ecosistemas presentes lo convierte en un laboratorio natural para el estudio de la biodiversidad caribeña.',
-        latitud: 18.3000,
-        longitud: -68.7000,
-        imagen: parqueEsteImg, // ← USANDO IMPORT
-        ubicacion: 'Sureste',
-        extension: '430 km²',
-        tipo: 'Parque Nacional',
-        flora: ['Uva de playa', 'Cactus', 'Mangle botón', 'Orquídeas silvestres'],
-        fauna: ['Tortugas marinas', 'Delfines', 'Manatíes', 'Fragatas', 'Pelícanos'],
-        actividades: ['Snorkeling', 'Observación de tortugas', 'Visita a Isla Saona', 'Tour arqueológico'],
-        clima: 'Tropical seco',
-        horario: '8:00 AM - 5:00 PM',
-        contacto: '(809) 555-0127'
-      },
-      {
-        id: 6,
-        nombre: 'Monumento Natural Saltos de la Damajagua',
-        descripcion: 'Famoso por sus 27 cascadas y pozos de agua cristalina, este monumento natural ofrece una experiencia única de ecoturismo en medio de un bosque tropical húmedo. Los visitantes pueden escalar, saltar y deslizarse por las cascadas mientras admiran la exuberante vegetación y la fauna local. El sistema fluvial forma piscinas naturales de aguas turquesas rodeadas de rocas calizas erosionadas. Este ecosistema es vital para la recarga acuífera y la conservación de especies endémicas de anfibios e insectos.',
-        latitud: 19.6167,
-        longitud: -70.9833,
-        imagen: damajaguaImg, // ← USANDO IMPORT
-        ubicacion: 'Puerto Plata',
-        extension: '4.5 km²',
-        tipo: 'Monumento Natural',
-        flora: ['Helechos gigantes', 'Bromelias', 'Orquídeas de río', 'Árboles de sombra'],
-        fauna: ['Cangrejos de río', 'Anfibios endémicos', 'Mariposas', 'Aves ribereñas'],
-        actividades: ['Salto de cascadas', 'Natación', 'Senderismo acuático', 'Fotografía'],
-        clima: 'Tropical húmedo',
-        horario: '8:30 AM - 4:00 PM',
-        contacto: '(809) 555-0128'
-      },
-      {
-        id: 7,
-        nombre: 'Reserva Antropológica Cuevas de Borbón',
-        descripcion: 'Este sistema de cuevas conserva uno de los conjuntos más importantes de arte rupestre taíno en el Caribe, con pictografías y petroglifos que datan de hace más de 1,000 años. Las cuevas también albergan formaciones geológicas espectaculares como estalactitas, estalagmitas y columnas. El área circundante protege un bosque seco con especies vegetales adaptadas a las condiciones kársticas. Este sitio es fundamental para entender la cultura precolombina y la relación de los taínos con su entorno natural.',
-        latitud: 18.4833,
-        longitud: -69.9167,
-        imagen: cuevasBorbonImg, // ← USANDO IMPORT
-        ubicacion: 'Santo Domingo',
-        extension: '2.8 km²',
-        tipo: 'Reserva Científica',
-        flora: ['Árboles caducifolios', 'Cactus', 'Plantas rupícolas', 'Lianas'],
-        fauna: ['Murciélagos', 'Arañas de cueva', 'Insectos trogloditas', 'Reptiles'],
-        actividades: ['Tour arqueológico', 'Espeleología', 'Fotografía histórica', 'Estudios culturales'],
-        clima: 'Tropical húmedo',
-        horario: '9:00 AM - 4:00 PM',
-        contacto: '(809) 555-0129'
-      },
-      {
-        id: 8,
-        nombre: 'Parque Nacional Submarino La Caleta',
-        descripcion: 'Este parque nacional submarino es uno de los sitios de buceo más importantes del Caribe, protegiendo un ecosistema marino excepcional que incluye arrecifes de coral, praderas de pastos marinos y un pecio histórico. El parque alberga el famoso barco hundido "Hickory" que sirve como arrecife artificial, atraendo una gran diversidad de vida marina. Las aguas cristalinas permiten una visibilidad excepcional para observar morenas, tortugas marinas, rayas y numerosas especies de peces tropicales. Este santuario marino es vital para la reproducción de especies comerciales y la protección de la biodiversidad costera.',
-        latitud: 18.4167,
-        longitud: -69.6833,
-        imagen: parqueCaletaImg, // ← USANDO IMPORT
-        ubicacion: 'Costa Sur, cerca de Santo Domingo',
-        extension: '10 km² marinos',
-        tipo: 'Parque Nacional Submarino',
-        flora: ['Corales cuernos de alce', 'Corales cerebro', 'Abanicos de mar', 'Pastos marinos', 'Algas coralinas'],
-        fauna: ['Tortugas marinas', 'Morenas', 'Rayas águila', 'Pez ángel', 'Pez loro', 'Cangrejos ermitaños'],
-        actividades: ['Buceo recreativo', 'Snorkeling', 'Fotografía submarina', 'Investigación marina', 'Educación ambiental'],
-        clima: 'Tropical costero',
-        horario: '8:00 AM - 5:00 PM',
-        contacto: '(809) 555-0130'
-      },
-      {
-        id: 9, // ← CORREGIDO: Cambiado de 8 a 9
-        nombre: 'Parque Nacional Manglares del Bajo Yuna',
-        descripcion: 'Este extenso sistema de manglares en la desembocadura del río Yuna constituye uno de los humedales más importantes del Caribe para la conservación de aves acuáticas y especies marino-costeras. Los manglares sirven como criadero natural para peces, crustáceos y moluscos, sustentando las pesquerías locales. El parque protege cuatro tipos de mangle y es un sitio crucial para aves migratorias neotropicales. Durante la temporada de migración, miles de aves utilizan este humedal como área de descanso y alimentación en su ruta entre Norte y Sur América.',
-        latitud: 19.2000,
-        longitud: -69.5667,
-        imagen: manglaresYunaImg, // ← USANDO IMPORT
-        ubicacion: 'Bahía de Samaná',
-        extension: '110 km²',
-        tipo: 'Parque Nacional',
-        flora: ['Mangle rojo', 'Mangle negro', 'Mangle blanco', 'Mangle botón', 'Lianas mangleras'],
-        fauna: ['Flamencos', 'Garzas', 'Pelícanos', 'Cocodrilos americanos', 'Manatíes', 'Cangrejos azules'],
-        actividades: ['Paseos en bote', 'Observación de aves', 'Fotografía de naturaleza', 'Pesca deportiva regulada'],
-        clima: 'Tropical húmedo',
-        horario: '7:00 AM - 6:00 PM',
-        contacto: '(809) 555-0130'
-      },
-      {
-        id: 10,
-        nombre: 'Parque Nacional Sierra de Bahoruco',
-        descripcion: 'Esta sierra constituye un hotspot de biodiversidad con ecosistemas que van desde bosques secos a nivel del mar hasta bosques nublados en las alturas. El parque protege numerosas especies endémicas de plantas y animales, incluyendo orquídeas únicas y anfibios que no se encuentran en ningún otro lugar del mundo. La variación altitudinal crea microclimas distintos que albergan comunidades biológicas especializadas. La sierra también contiene importantes formaciones geológicas como el Hoyo de Pelempito, un impresionante valle intramontañoso.',
-        latitud: 18.1667,
-        longitud: -71.5833,
-        imagen: bahorucoImg, // ← USANDO IMPORT
-        ubicacion: 'Suroeste',
-        extension: '1,100 km²',
-        tipo: 'Parque Nacional',
-        flora: ['Pinos endémicos', 'Orquídeas únicas', 'Helechos gigantes', 'Palmas de montaña'],
-        fauna: ['Solendón', 'Jutía', 'Anfibios endémicos', 'Mariposas raras'],
-        actividades: ['Senderismo especializado', 'Observación de orquídeas', 'Fotografía científica', 'Investigación'],
-        clima: 'Variable según altitud',
-        horario: '7:00 AM - 4:00 PM',
-        contacto: '(809) 555-0132'
-      }
-    ];
-
+    // Las áreas ya están cargadas desde el store
     // Iniciar carrusel automático
     startAutoPlay();
   } catch (error) {
