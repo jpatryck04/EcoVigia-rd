@@ -115,6 +115,14 @@
           <i class="fas fa-file-pdf"></i>
           Exportar a PDF
         </button>
+        <button class="btn-export" @click="exportToCSV">
+          <i class="fas fa-file-csv"></i>
+          Exportar a CSV
+        </button>
+        <button class="btn-export" @click="exportStatistics">
+          <i class="fas fa-chart-bar"></i>
+          Exportar Estadísticas
+        </button>
       </div>
 
       <!-- Loading -->
@@ -303,7 +311,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { exportService } from '@/services/exportService';
 import { formatDate } from '@/utils';
+
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -705,12 +715,156 @@ const changePage = (page: number) => {
   }
 };
 
+// Funciones de exportación actualizadas
 const exportToExcel = () => {
-  alert('Función de exportación a Excel en desarrollo');
+  if (filteredVolunteers.value.length === 0) {
+    showToast('No hay datos para exportar', 'warning');
+    return;
+  }
+
+  const result = exportService.exportVolunteersToExcel(
+    filteredVolunteers.value,
+    {
+      filename: `voluntarios_${getCurrentDate()}.xlsx`,
+      title: `Listado de Voluntarios - ${new Date().toLocaleDateString('es-DO')}`,
+      includeAllData: true
+    }
+  );
+
+  if (result.success) {
+    showToast(`✅ ${result.message} - ${filteredVolunteers.value.length} registros`, 'success');
+  } else {
+    showToast(`❌ ${result.message}`, 'error');
+  }
 };
 
 const exportToPDF = () => {
-  alert('Función de exportación a PDF en desarrollo');
+  if (filteredVolunteers.value.length === 0) {
+    showToast('No hay datos para exportar', 'warning');
+    return;
+  }
+
+  const result = exportService.exportVolunteersToPDF(
+    filteredVolunteers.value,
+    {
+      filename: `voluntarios_${getCurrentDate()}.pdf`,
+      title: `Listado de Voluntarios - ${new Date().toLocaleDateString('es-DO')}`
+    }
+  );
+
+  if (result.success) {
+    showToast(`✅ ${result.message} - ${filteredVolunteers.value.length} registros`, 'success');
+  } else {
+    showToast(`❌ ${result.message}`, 'error');
+  }
+};
+
+const exportToCSV = () => {
+  if (filteredVolunteers.value.length === 0) {
+    showToast('No hay datos para exportar', 'warning');
+    return;
+  }
+
+  const result = exportService.exportToCSV(
+    filteredVolunteers.value,
+    `voluntarios_${getCurrentDate()}.csv`
+  );
+
+  if (result.success) {
+    showToast(`✅ ${result.message} - ${filteredVolunteers.value.length} registros`, 'success');
+  } else {
+    showToast(`❌ ${result.message}`, 'error');
+  }
+};
+
+// Agregar también botón para exportar estadísticas
+const exportStatistics = () => {
+  if (volunteers.value.length === 0) {
+    showToast('No hay datos para generar estadísticas', 'warning');
+    return;
+  }
+
+  const result = exportService.exportStatisticsToPDF(volunteers.value);
+  
+  if (result.success) {
+    showToast(`✅ ${result.message}`, 'success');
+  } else {
+    showToast(`❌ ${result.message}`, 'error');
+  }
+};
+
+// Función para mostrar toasts/notificaciones
+const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+  // Crear elemento de toast
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                  type === 'error' ? 'exclamation-circle' : 
+                  type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+    <span>${message}</span>
+  `;
+  
+  // Agregar estilos
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+    ${type === 'success' ? 'background: #4caf50;' :
+     type === 'error' ? 'background: #f44336;' :
+     type === 'warning' ? 'background: #ff9800;' : 'background: #2196f3;'}
+  `;
+  
+  // Agregar al documento
+  document.body.appendChild(toast);
+  
+  // Remover después de 5 segundos
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, 5000);
+};
+
+// Agregar estilos CSS para las animaciones
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+`;
+
+document.head.appendChild(style);
+const getCurrentDate = () => {
+  return new Date().toISOString().split('T')[0].replace(/-/g, '');
 };
 
 onMounted(() => {
@@ -944,6 +1098,7 @@ onMounted(() => {
   display: flex;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .btn-export {
@@ -1329,6 +1484,15 @@ table {
   
   .btn-clear {
     margin-left: 0;
+  }
+  
+  .export-section {
+    flex-direction: column;
+  }
+  
+  .btn-export {
+    width: 100%;
+    justify-content: center;
   }
   
   .action-buttons {
