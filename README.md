@@ -8,6 +8,8 @@ EcoVigía RD es una aplicación móvil diseñada para promover la conciencia amb
 
 # Credenciales Admin
 
+⚠️Estas credenciales es para acceder al apartado admin importante⚠️ 
+
 Usuario: admin@medioambiente.gob.do
 Contraseña: AdminMedioAmbiente2024!
 
