@@ -139,13 +139,7 @@
           <button type="submit" :disabled="loading" class="submit-btn">
             <i v-if="loading" class="fas fa-spinner fa-spin"></i>
             {{ loading ? 'Enviando...' : 'Enviar Solicitud' }}
-          </button>
-
-          <!-- Botón temporal para debug -->
-          <button type="button" @click="debugStorage" class="debug-btn">
-            <i class="fas fa-bug"></i>
-            Verificar Almacenamiento
-          </button>
+          </button>    
         </form>
       </div>
     </div>
