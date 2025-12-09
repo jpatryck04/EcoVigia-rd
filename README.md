@@ -43,9 +43,9 @@ EcoVigía RD es una aplicación móvil diseñada para promover la conciencia amb
 | Yordalis Estefany Herrera Encarnacion| Desarrolladora Frontend | 2023-1719 |
 | Anthony Enmanuel Feliz De La Rosa | Desarrollador Full Stack | 2021-0615 |
 | Edward Neftalí Liriano Gómez | Desarrollador Full Stack | 2022-0437 |
-| Reynaldo Sebastian Lopez Terrero | Desarrollador ===| 2023-0201 |
-| Enmanuel De Jesus Pichardo Salas | Desarrollador === | 2022-1341 |
-
+| Reynaldo Sebastian Lopez Terrero | Desarrollador Full Stack | 2023-0201 |
+| Enmanuel De Jesus Pichardo Salas | Desarrollador backend | 2022-1341 |
+| Jahzeel Benzan De La Cruz | Desarrollador backend | 2023-0298 |
 
 ## 🏫 Institución
 
