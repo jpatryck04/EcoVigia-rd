@@ -115,4 +115,7 @@ export interface Volunteer {
   actividades_completadas?: number;
   horas_voluntariado?: number;
   notas?: string;
+  status?: string; // Compatibilidad con auth store
+  created_at?: string;
+  fecha_rechazo?: string;
 }
