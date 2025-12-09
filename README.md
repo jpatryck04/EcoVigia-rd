@@ -6,6 +6,11 @@ Aplicación móvil desarrollada para el Ministerio de Medio Ambiente y Recursos 
 
 EcoVigía RD es una aplicación móvil diseñada para promover la conciencia ambiental, facilitar la participación ciudadana y proporcionar acceso a información relevante sobre el medio ambiente en República Dominicana.
 
+# Credenciales Admin
+
+Usuario: admin@medioambiente.gob.do
+Contraseña: AdminMedioAmbiente2024!
+
 ## 🚀 Características
 
 ### Módulos Públicos
