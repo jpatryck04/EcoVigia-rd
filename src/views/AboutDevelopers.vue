@@ -94,8 +94,8 @@
           <h3>Video Explicativo</h3>
           <div class="qr-code">
             <!-- Aquí iría el QR code generado -->
-            <div class="qr-placeholder">
-              <i class="fas fa-qrcode"></i>
+            <div class="qr-code">
+              <img :src="qrImg" alt="QR del Video" class="qr-image" />
               <p>QR Code del Video</p>
             </div>
           </div>
@@ -116,6 +116,8 @@ import anthonyImg from '@/assets/team/anthony.jpg';
 import neftaliImg from '@/assets/team/neftali.jpg';
 import jahzeelImg from '@/assets/team/jahzeel.jpg';
 import sebastianImg from '@/assets/team/sebastian.jpg';
+import qrImg from '@/assets/images/EcoVigia_RD.png';
+
 
 
 
@@ -233,6 +235,17 @@ const technologies = ref<Technology[]>([
   padding: 2rem 0;
   min-height: 100vh;
   background: #f8f9fa;
+}
+
+.qr-placeholder {
+  width: 200px;
+  height: 200px;
+}
+
+.qr-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .page-header {
